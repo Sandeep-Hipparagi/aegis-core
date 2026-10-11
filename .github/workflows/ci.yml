@@ -1,0 +1,46 @@
+name: AegisCore CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & Invariant Verification
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Validate TypeScript Configuration & Source Formatting
+        run: |
+          node -v
+          npm -v
+
+      - name: Run Full Test Suite
+        run: npm test
+
+      - name: Run Live Banking Invariant Demonstration
+        run: npm run demo:banking
+
+      - name: Verify CLI Executable
+        run: |
+          node --experimental-strip-types bin/aegis.ts --help
+          node --experimental-strip-types bin/aegis.ts audit verify

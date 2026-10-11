@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test and coverage artifacts
+coverage/
+.nyc_output/
+
+# Audit ledgers and runtime data
+*.log
+aegis-audit.log
+data/
+data/audit/
+*.sqlite
+*.db
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+scratch/

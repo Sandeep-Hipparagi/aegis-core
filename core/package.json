@@ -1,0 +1,11 @@
+{
+  "name": "@aegiscore/core",
+  "version": "0.1.0",
+  "description": "Core deterministic policy engine and zero-trust gateway for AegisCore",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts"
+  },
+  "license": "Apache-2.0"
+}

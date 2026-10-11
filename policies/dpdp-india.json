@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "policyNamespace": "compliance.india.dpdp",
+  "description": "Deterministic governance invariants enforcing India Digital Personal Data Protection (DPDP) Act compliance",
+  "defaultEffect": "DENY",
+  "rules": [
+    {
+      "id": "DPDP-001-BLOCK-UNAUTHORIZED-PURGE",
+      "name": "Block Autonomous Customer Record Purging",
+      "description": "Permanent erasure or hard-delete requests under Right-to-be-Forgotten require verified DPO sign-off",
+      "targetTools": ["purge_user_data", "delete_customer_profile", "hard_delete_records"],
+      "effect": "DENY",
+      "priority": 1000,
+      "conditions": [
+        {
+          "field": "agent.role",
+          "operator": "NOT_EQUALS",
+          "value": "data-protection-officer-human",
+          "description": "Only human Data Protection Officers (DPO) can authorize irreversible record erasure"
+        }
+      ]
+    },
+    {
+      "id": "DPDP-002-BLOCK-UNMASKED-IDENTITY-TARGETS",
+      "name": "Block Access to Direct Identity Vault Tables",
+      "description": "Prevents AI agents from directly reading unmasked government identity tables",
+      "targetTools": ["query_database", "execute_sql"],
+      "effect": "DENY",
+      "priority": 950,
+      "conditions": [
+        {
+          "field": "parameters.targetTable",
+          "operator": "IN",
+          "value": ["aadhaar_vault", "pan_identity_registry", "raw_biometrics", "kyc_documents"],
+          "description": "Target table contains raw Indian identity credentials under strict DPDP isolation"
+        }
+      ]
+    },
+    {
+      "id": "DPDP-003-ESCALATE-BULK-DATA-EXPORT",
+      "name": "Escalate Bulk Personal Data Exports (> 100 Records)",
+      "description": "Bulk exports of personal records require human supervisor authorization",
+      "targetTools": ["export_customer_dataset", "generate_bulk_report", "download_crm_leads"],
+      "effect": "ESCALATE",
+      "priority": 850,
+      "conditions": [
+        {
+          "field": "parameters.recordCount",
+          "operator": "GREATER_THAN",
+          "value": 100,
+          "description": "Export volume exceeds autonomous limit (100 records); requires human approval"
+        }
+      ]
+    },
+    {
+      "id": "DPDP-004-ALLOW-SANITY-CHECK",
+      "name": "Allow Anonymized Metrics & Aggregations",
+      "description": "Permits aggregate read queries that do not target raw PII",
+      "targetTools": ["get_metrics", "read_anonymized_analytics"],
+      "effect": "ALLOW",
+      "priority": 100,
+      "conditions": []
+    }
+  ]
+}

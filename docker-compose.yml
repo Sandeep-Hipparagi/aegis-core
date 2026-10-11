@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  aegis-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegiscore-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+    volumes:
+      - aegis-audit-data:/app/data
+      - ./policies:/app/policies:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  aegis-audit-data:
+    name: aegiscore-audit-ledger

@@ -1,0 +1,8 @@
+{
+  "name": "@aegiscore/sdk",
+  "version": "0.1.0",
+  "description": "Lightweight client SDK for AegisCore deterministic agent governance",
+  "main": "src/index.ts",
+  "type": "module",
+  "license": "Apache-2.0"
+}

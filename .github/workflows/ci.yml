@@ -29,7 +29,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Validate TypeScript Configuration & Source Formatting
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate Environment & Tool Versions
         run: |
           node -v
           npm -v

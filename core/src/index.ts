@@ -1,46 +1,33 @@
-import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AegisGatewayServer } from './server.ts';
-import type { PolicyDocument } from './types.ts';
+import { AegisHttpServer } from '../../src/server.ts';
 
+// Data contracts
 export * from './types.ts';
-export * from './engine.ts';
-export * from './executor.ts';
-export * from './server.ts';
-export * from '../../src/validator/schemaValidator.ts';
-export * from '../../src/policy/engine.ts';
-export * from '../../src/audit/ledger.ts';
-export * from '../../src/executor/sandboxRunner.ts';
-export * from '../../src/privacy/sanitizer.ts';
-export * from '../../src/hitl/interceptor.ts';
+
+// Canonical production classes & components (Zero conflicting star exports)
+export { GatewayPipeline } from '../../src/gateway/pipeline.ts';
+export { AegisHttpServer, AegisHttpServer as AegisGatewayServer } from '../../src/server.ts';
+export { PolicyEngine } from '../../src/policy/engine.ts';
+export { SchemaValidator, ValidationError } from '../../src/validator/schemaValidator.ts';
+export { WormAuditLedger, WormAuditLedger as WormLedger, GENESIS_HASH, hashPayload } from '../../src/audit/ledger.ts';
+export { SandboxRunner, SandboxRunner as ExecutionBoundary } from '../../src/executor/sandboxRunner.ts';
+export { tokenize, detokenize, shredVault } from '../../src/privacy/sanitizer.ts';
+export { HitlInterceptor } from '../../src/hitl/interceptor.ts';
+export { McpServerAdapter } from '../../src/mcp/server.ts';
 
 /**
  * Bootstrap function to launch the gateway with sample policies and mock handlers
  */
-export async function launchAegisGateway(port = 8080): Promise<AegisGatewayServer> {
-  const gateway = new AegisGatewayServer({ port });
+export async function launchAegisGateway(port = 8080): Promise<AegisHttpServer> {
   const currentDir = dirname(fileURLToPath(import.meta.url));
   const rootDir = resolve(currentDir, '../../');
+  const policiesDir = resolve(rootDir, 'policies');
 
-  // Load sample policies if they exist
-  const bankingPolicyPath = resolve(rootDir, 'policies/banking-policy.json');
-  const dataPolicyPath = resolve(rootDir, 'policies/data-governance.json');
+  const server = new AegisHttpServer({ port, policiesDir });
 
-  if (existsSync(bankingPolicyPath)) {
-    const policy = JSON.parse(readFileSync(bankingPolicyPath, 'utf-8')) as PolicyDocument;
-    gateway.loadPolicy(policy);
-  }
-
-  if (existsSync(dataPolicyPath)) {
-    const policy = JSON.parse(readFileSync(dataPolicyPath, 'utf-8')) as PolicyDocument;
-    gateway.loadPolicy(policy);
-  }
-
-  // Register mock safe tool handlers inside the isolated execution boundary
-  const boundary = gateway.getExecutionBoundary();
-
-  boundary.registerToolHandler('check_balance', (params) => {
+  // Register mock safe tool handlers
+  server.registerToolHandler('check_balance', (params) => {
     const account = (params.accountId as string) || 'ACC-DEFAULT';
     return {
       accountId: account,
@@ -50,7 +37,7 @@ export async function launchAegisGateway(port = 8080): Promise<AegisGatewayServe
     };
   });
 
-  boundary.registerToolHandler('transfer_funds', (params) => {
+  server.registerToolHandler('transfer_funds', (params) => {
     return {
       transactionId: `tx-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
       status: 'SETTLED',
@@ -60,7 +47,7 @@ export async function launchAegisGateway(port = 8080): Promise<AegisGatewayServe
     };
   });
 
-  boundary.registerToolHandler('execute_sql_query', (params) => {
+  server.registerToolHandler('execute_sql_query', () => {
     return {
       rowsAffected: 0,
       data: [
@@ -70,8 +57,8 @@ export async function launchAegisGateway(port = 8080): Promise<AegisGatewayServe
     };
   });
 
-  await gateway.start();
-  return gateway;
+  await server.start();
+  return server;
 }
 
 // Auto-run if executed directly as entrypoint

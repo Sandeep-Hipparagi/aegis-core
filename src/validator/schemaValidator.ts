@@ -27,7 +27,7 @@ export interface FieldConstraint {
 export interface SchemaDefinition {
   name: string;
   strict?: boolean; // defaults to true: fail closed on extra fields
-  properties: Record<string, FieldConstraint>;
+  properties?: Record<string, FieldConstraint>;
 }
 
 export interface ValidationIssue {
@@ -90,8 +90,10 @@ export class SchemaValidator {
     const payloadObj = payload as Record<string, unknown>;
     const sanitized: Record<string, unknown> = {};
 
+    const schemaProps = schema.properties || {};
+
     // 1. Strict check for unrecognized / unexpected fields (Fail-closed)
-    const allowedKeys = new Set(Object.keys(schema.properties));
+    const allowedKeys = new Set(Object.keys(schemaProps));
     const receivedKeys = Object.keys(payloadObj);
 
     for (const key of receivedKeys) {
@@ -110,7 +112,7 @@ export class SchemaValidator {
     }
 
     // 2. Validate declared properties
-    for (const [propName, constraint] of Object.entries(schema.properties)) {
+    for (const [propName, constraint] of Object.entries(schemaProps)) {
       const val = payloadObj[propName];
       const propPath = propName;
 

@@ -7,7 +7,19 @@ export type ConditionType =
   | 'param_boundary' 
   | 'disallowed_targets' 
   | 'role_invariant'
+  | 'declarative_operator'
   | 'custom';
+
+export type Operator = 
+  | 'EQUALS' 
+  | 'NOT_EQUALS' 
+  | 'GREATER_THAN' 
+  | 'LESS_THAN' 
+  | 'LESS_THAN_OR_EQUAL' 
+  | 'IN' 
+  | 'NOT_IN' 
+  | 'MATCHES_REGEX' 
+  | 'CONTAINS';
 
 export interface RateLimitCondition {
   type: 'rate_limit';
@@ -44,17 +56,27 @@ export interface CustomCondition {
   message?: string;
 }
 
+export interface DeclarativeOperatorCondition {
+  type?: 'declarative_operator';
+  field: string;
+  operator: Operator;
+  value: unknown;
+  description?: string;
+  message?: string;
+}
+
 export type PolicyCondition = 
   | RateLimitCondition 
   | ParamBoundaryCondition 
   | DisallowedTargetsCondition 
   | RoleInvariantCondition
-  | CustomCondition;
+  | CustomCondition
+  | DeclarativeOperatorCondition;
 
 export interface InvariantRule {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   targetTools: string[] | '*';
   effect: PolicyEffect;
   priority: number; // Higher number = higher precedence
@@ -63,8 +85,10 @@ export interface InvariantRule {
 
 export interface PolicyContract {
   version: string;
-  namespace: string;
-  defaultEffect: 'ALLOW' | 'DENY';
+  namespace?: string;
+  policyNamespace?: string;
+  description?: string;
+  defaultEffect?: 'ALLOW' | 'DENY';
   rules: InvariantRule[];
 }
 
@@ -75,6 +99,13 @@ export interface IntentContext {
   role: string;
   tool: string;
   parameters: Record<string, unknown>;
+  agent?: {
+    agentId?: string;
+    role?: string;
+    sessionId?: string;
+    tenantId?: string;
+  };
+  metadata?: Record<string, unknown>;
   timestamp?: number;
 }
 
@@ -106,10 +137,30 @@ export class PolicyEngine {
   constructor() {}
 
   /**
-   * Register a policy document / contract into the engine
+   * Register a policy document / contract into the engine.
+   * Seamlessly resolves namespace across both `namespace` and `policyNamespace`.
    */
-  public registerPolicy(policy: PolicyContract): void {
-    this.policies.set(policy.namespace, policy);
+  public registerPolicy(policy: PolicyContract | Record<string, unknown>): void {
+    const raw = policy as Record<string, unknown>;
+    const ns = (policy as PolicyContract).namespace ?? 
+               raw.policyNamespace ?? 
+               raw.namespace ?? 
+               `policy-${randomUUID()}`;
+
+    const normalized: PolicyContract = {
+      version: (raw.version as string) || '1.0.0',
+      namespace: String(ns),
+      policyNamespace: String(ns),
+      description: (raw.description as string) || '',
+      defaultEffect: (raw.defaultEffect as 'ALLOW' | 'DENY') || 'DENY',
+      rules: (raw.rules as InvariantRule[]) || []
+    };
+
+    this.policies.set(String(ns), normalized);
+  }
+
+  public getPolicies(): ReadonlyMap<string, PolicyContract> {
+    return this.policies;
   }
 
   /**
@@ -141,14 +192,27 @@ export class PolicyEngine {
   }
 
   /**
-   * Resolve nested path from context
+   * Resolve nested dot-notation path from context (e.g. "parameters.amount", "agent.role")
    */
   private resolveField(path: string, context: IntentContext): unknown {
+    // Convenience aliases for common paths
+    if (path === 'agent.role') {
+      return context.agent?.role ?? context.role;
+    }
+    if (path === 'agent.agentId') {
+      return context.agent?.agentId ?? context.agentId;
+    }
+
     const segments = path.split('.');
     let current: unknown = context;
 
     for (const seg of segments) {
       if (current === null || current === undefined || typeof current !== 'object') {
+        // Fallback: If segment is not found directly on context root, check parameters
+        if (current === context && context.parameters && seg in context.parameters) {
+          current = context.parameters[seg];
+          continue;
+        }
         return undefined;
       }
       current = (current as Record<string, unknown>)[seg];
@@ -157,18 +221,96 @@ export class PolicyEngine {
   }
 
   /**
-   * Deterministically evaluate a single condition
+   * Evaluate a declarative operator condition
+   */
+  private evaluateOperator(
+    operator: Operator,
+    actual: unknown,
+    expected: unknown
+  ): boolean {
+    switch (operator) {
+      case 'EQUALS':
+        return actual === expected;
+
+      case 'NOT_EQUALS':
+        return actual !== expected;
+
+      case 'GREATER_THAN':
+        return typeof actual === 'number' && typeof expected === 'number' && actual > expected;
+
+      case 'LESS_THAN':
+        return typeof actual === 'number' && typeof expected === 'number' && actual < expected;
+
+      case 'LESS_THAN_OR_EQUAL':
+        return typeof actual === 'number' && typeof expected === 'number' && actual <= expected;
+
+      case 'IN':
+        return Array.isArray(expected) && expected.includes(actual);
+
+      case 'NOT_IN':
+        return Array.isArray(expected) && !expected.includes(actual);
+
+      case 'MATCHES_REGEX':
+        if (typeof actual !== 'string' || typeof expected !== 'string') return false;
+        try {
+          const regex = new RegExp(expected);
+          return regex.test(actual);
+        } catch {
+          return false;
+        }
+
+      case 'CONTAINS':
+        if (typeof actual === 'string' && typeof expected === 'string') {
+          return actual.includes(expected);
+        }
+        if (Array.isArray(actual)) {
+          return actual.includes(expected);
+        }
+        return false;
+
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Deterministically evaluate a single condition against an intent context
    */
   private checkCondition(
     condition: PolicyCondition,
     intent: IntentContext,
     rule: InvariantRule
   ): { matched: boolean; violation?: ViolationTrace } {
-    switch (condition.type) {
+    // 1. Declarative Operator Condition: contains 'field' and 'operator'
+    const declCond = condition as DeclarativeOperatorCondition;
+    if (declCond.operator && declCond.field) {
+      const actual = this.resolveField(declCond.field, intent);
+      const isMatch = this.evaluateOperator(declCond.operator, actual, declCond.value);
+
+      if (isMatch) {
+        return {
+          matched: true,
+          violation: {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            conditionType: 'declarative_operator',
+            expected: `Invariant: NOT (${declCond.field} ${declCond.operator} ${JSON.stringify(declCond.value)})`,
+            actual,
+            message: declCond.message ?? declCond.description ?? `Condition matched: ${declCond.field} ${declCond.operator} ${JSON.stringify(declCond.value)}`
+          }
+        };
+      }
+      return { matched: false };
+    }
+
+    // 2. Named Condition Types
+    const typedCond = condition as { type?: string };
+    switch (typedCond.type) {
       case 'rate_limit': {
-        const windowMs = condition.windowMs ?? 60_000;
+        const cond = condition as RateLimitCondition;
+        const windowMs = cond.windowMs ?? 60_000;
         const currentCount = this.getSessionActionCount(intent.sessionId, windowMs);
-        const limitExceeded = currentCount >= condition.maxActionsPerSession;
+        const limitExceeded = currentCount >= cond.maxActionsPerSession;
 
         if (limitExceeded) {
           return {
@@ -177,9 +319,9 @@ export class PolicyEngine {
               ruleId: rule.id,
               ruleName: rule.name,
               conditionType: 'rate_limit',
-              expected: `Max ${condition.maxActionsPerSession} actions per session (${windowMs}ms window)`,
+              expected: `Max ${cond.maxActionsPerSession} actions per session (${windowMs}ms window)`,
               actual: `${currentCount + 1} actions attempted`,
-              message: condition.message ?? `Rate limit invariant violated: exceeded ${condition.maxActionsPerSession} calls in session [${intent.sessionId}].`
+              message: cond.message ?? `Rate limit invariant violated: exceeded ${cond.maxActionsPerSession} calls in session [${intent.sessionId}].`
             }
           };
         }
@@ -187,7 +329,8 @@ export class PolicyEngine {
       }
 
       case 'param_boundary': {
-        const rawValue = this.resolveField(condition.field, intent);
+        const cond = condition as ParamBoundaryCondition;
+        const rawValue = this.resolveField(cond.field, intent);
         if (typeof rawValue !== 'number' || Number.isNaN(rawValue)) {
           return {
             matched: true,
@@ -195,9 +338,9 @@ export class PolicyEngine {
               ruleId: rule.id,
               ruleName: rule.name,
               conditionType: 'param_boundary',
-              expected: `Numeric value for '${condition.field}'`,
+              expected: `Numeric value for '${cond.field}'`,
               actual: typeof rawValue,
-              message: `Field '${condition.field}' must be a numeric value.`
+              message: `Field '${cond.field}' must be a numeric value.`
             }
           };
         }
@@ -205,12 +348,12 @@ export class PolicyEngine {
         let isOutOfBounds = false;
         let boundaryMsg = '';
 
-        if (condition.max !== undefined && rawValue > condition.max) {
+        if (cond.max !== undefined && rawValue > cond.max) {
           isOutOfBounds = true;
-          boundaryMsg = `Value ${rawValue} exceeds maximum boundary ceiling of ${condition.max}`;
-        } else if (condition.min !== undefined && rawValue < condition.min) {
+          boundaryMsg = `Value ${rawValue} exceeds maximum boundary ceiling of ${cond.max}`;
+        } else if (cond.min !== undefined && rawValue < cond.min) {
           isOutOfBounds = true;
-          boundaryMsg = `Value ${rawValue} is below minimum boundary floor of ${condition.min}`;
+          boundaryMsg = `Value ${rawValue} is below minimum boundary floor of ${cond.min}`;
         }
 
         if (isOutOfBounds) {
@@ -220,9 +363,9 @@ export class PolicyEngine {
               ruleId: rule.id,
               ruleName: rule.name,
               conditionType: 'param_boundary',
-              expected: `Boundary [${condition.min ?? '-∞'}, ${condition.max ?? '+∞'}]`,
+              expected: `Boundary [${cond.min ?? '-∞'}, ${cond.max ?? '+∞'}]`,
               actual: rawValue,
-              message: condition.message ?? boundaryMsg
+              message: cond.message ?? boundaryMsg
             }
           };
         }
@@ -231,11 +374,12 @@ export class PolicyEngine {
       }
 
       case 'disallowed_targets': {
-        const targetVal = this.resolveField(condition.targetField, intent);
+        const cond = condition as DisallowedTargetsCondition;
+        const targetVal = this.resolveField(cond.targetField, intent);
         const targetStr = typeof targetVal === 'string' ? targetVal : String(targetVal ?? '');
 
-        // Check exact match or substring / hierarchical prefix match (e.g. "users.credentials")
-        const isDisallowed = condition.targets.some(disallowed => {
+        // Check exact match or hierarchical prefix match (e.g. "users.credentials")
+        const isDisallowed = cond.targets.some(disallowed => {
           const normTarget = targetStr.toLowerCase();
           const normDisallowed = disallowed.toLowerCase();
           return normTarget === normDisallowed || 
@@ -250,9 +394,9 @@ export class PolicyEngine {
               ruleId: rule.id,
               ruleName: rule.name,
               conditionType: 'disallowed_targets',
-              expected: `Target not in blocked list: [${condition.targets.join(', ')}]`,
+              expected: `Target not in blocked list: [${cond.targets.join(', ')}]`,
               actual: targetStr,
-              message: condition.message ?? `Access to restricted target '${targetStr}' is blocked by security invariant.`
+              message: cond.message ?? `Access to restricted target '${targetStr}' is blocked by security invariant.`
             }
           };
         }
@@ -261,7 +405,10 @@ export class PolicyEngine {
       }
 
       case 'role_invariant': {
-        if (condition.deniedRoles && condition.deniedRoles.includes(intent.role)) {
+        const cond = condition as RoleInvariantCondition;
+        const effectiveRole = intent.agent?.role ?? intent.role;
+
+        if (cond.deniedRoles && cond.deniedRoles.includes(effectiveRole)) {
           return {
             matched: true,
             violation: {
@@ -269,22 +416,22 @@ export class PolicyEngine {
               ruleName: rule.name,
               conditionType: 'role_invariant',
               expected: `Role not in denied list`,
-              actual: intent.role,
-              message: condition.message ?? `Role '${intent.role}' is explicitly denied from invoking this tool.`
+              actual: effectiveRole,
+              message: cond.message ?? `Role '${effectiveRole}' is explicitly denied from invoking this tool.`
             }
           };
         }
 
-        if (condition.allowedRoles && !condition.allowedRoles.includes(intent.role)) {
+        if (cond.allowedRoles && !cond.allowedRoles.includes(effectiveRole)) {
           return {
             matched: true,
             violation: {
               ruleId: rule.id,
               ruleName: rule.name,
               conditionType: 'role_invariant',
-              expected: `Role in [${condition.allowedRoles.join(', ')}]`,
-              actual: intent.role,
-              message: condition.message ?? `Privilege escalation blocked: Role '${intent.role}' lacks required permissions.`
+              expected: `Role in [${cond.allowedRoles.join(', ')}]`,
+              actual: effectiveRole,
+              message: cond.message ?? `Privilege escalation blocked: Role '${effectiveRole}' lacks required permissions.`
             }
           };
         }
@@ -293,7 +440,8 @@ export class PolicyEngine {
       }
 
       case 'custom': {
-        const matches = condition.evaluate(intent);
+        const cond = condition as CustomCondition;
+        const matches = cond.evaluate(intent);
         if (matches) {
           return {
             matched: true,
@@ -303,7 +451,7 @@ export class PolicyEngine {
               conditionType: 'custom',
               expected: 'Custom invariant predicate satisfied',
               actual: 'Condition trigger fired',
-              message: condition.message ?? 'Custom policy condition matched'
+              message: cond.message ?? 'Custom policy condition matched'
             }
           };
         }
@@ -348,37 +496,37 @@ export class PolicyEngine {
         continue;
       }
 
-      // Check condition matches
-      let ruleConditionMatched = false;
+      // Check all conditions in this rule
+      let ruleConditionsMatch = true;
       const ruleViolations: ViolationTrace[] = [];
 
-      if (rule.conditions.length === 0) {
-        // Unconditional rule
-        ruleConditionMatched = true;
-      } else {
-        // Invariant trigger checks
+      if (rule.conditions.length > 0) {
         for (const condition of rule.conditions) {
           const check = this.checkCondition(condition, intent, rule);
-          if (check.matched) {
-            ruleConditionMatched = true;
-            if (check.violation) {
-              ruleViolations.push(check.violation);
-            }
+          if (!check.matched) {
+            ruleConditionsMatch = false;
+            break;
+          }
+          if (check.violation) {
+            ruleViolations.push(check.violation);
           }
         }
       }
 
-      if (ruleConditionMatched) {
+      if (ruleConditionsMatch) {
         matchedRuleIds.push(rule.id);
 
         if (rule.effect === 'DENY') {
           isDenied = true;
-          primaryDenialReason = rule.description || `Blocked by rule ${rule.id}`;
+          primaryDenialReason = rule.description || `Blocked by rule [${rule.id}]`;
           violations.push(...ruleViolations);
           // Deny overrides: immediate termination
           break;
         } else if (rule.effect === 'ESCALATE') {
           requiresEscalation = true;
+          if (ruleViolations.length > 0) {
+            violations.push(...ruleViolations);
+          }
         } else if (rule.effect === 'ALLOW') {
           isAllowed = true;
         }
@@ -386,6 +534,7 @@ export class PolicyEngine {
     }
 
     if (isDenied) {
+      const details = violations.length > 0 ? `: ${violations.map(v => v.message).join(' | ')}` : '';
       return {
         allowed: false,
         verdict: 'BLOCKED',
@@ -393,7 +542,7 @@ export class PolicyEngine {
         sessionId: intent.sessionId,
         matchedRules: matchedRuleIds,
         violations,
-        reason: `[INVARIANT REJECTED] ${primaryDenialReason}: ${violations.map(v => v.message).join(' | ')}`,
+        reason: `[INVARIANT REJECTED] ${primaryDenialReason}${details}`,
         timestamp
       };
     }
@@ -405,7 +554,7 @@ export class PolicyEngine {
         intentId,
         sessionId: intent.sessionId,
         matchedRules: matchedRuleIds,
-        violations: [],
+        violations,
         reason: 'Action requires human supervisor signoff before execution.',
         timestamp
       };

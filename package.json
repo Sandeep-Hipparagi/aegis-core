@@ -8,6 +8,7 @@
     "aegis": "./bin/aegis.ts"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "start:gateway": "node --experimental-strip-types core/src/index.ts",
     "demo:banking": "node --experimental-strip-types examples/banking-agent.ts",
     "test": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts",
@@ -28,5 +29,9 @@
     "url": "https://github.com/Sandeep-Hipparagi/aegis-core.git"
   },
   "author": "Sandeep Hipparagi & AegisCore Contributors",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
 }

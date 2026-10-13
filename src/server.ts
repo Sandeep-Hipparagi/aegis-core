@@ -1,10 +1,18 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { GatewayPipeline, type RequestContext } from './gateway/pipeline.ts';
+import { randomUUID } from 'node:crypto';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+import { GatewayPipeline, type RequestContext, type PipelineResult } from './gateway/pipeline.ts';
+import type { ToolHandler, ExecutionResult } from './executor/sandboxRunner.ts';
+import type { SchemaDefinition } from './validator/schemaValidator.ts';
+import type { PolicyContract } from './policy/engine.ts';
+import type { IntentPayload, PolicyDecision } from '../core/src/types.ts';
 
 export interface HttpServerOptions {
   port?: number;
   host?: string;
   pipeline?: GatewayPipeline;
+  policiesDir?: string;
 }
 
 export class AegisHttpServer {
@@ -17,10 +25,51 @@ export class AegisHttpServer {
     this.port = options.port ?? 8080;
     this.host = options.host ?? '0.0.0.0';
     this.pipeline = options.pipeline ?? new GatewayPipeline();
+
+    if (options.policiesDir) {
+      this.loadPoliciesFromDir(options.policiesDir);
+    }
   }
 
   public getPipeline(): GatewayPipeline {
     return this.pipeline;
+  }
+
+  public loadPolicy(policy: PolicyContract | Record<string, unknown>): void {
+    this.pipeline.registerPolicy(policy as PolicyContract);
+  }
+
+  public registerToolHandler(toolName: string, handler: ToolHandler): void {
+    this.pipeline.registerToolHandler(toolName, handler);
+  }
+
+  public registerToolSchema(toolName: string, schema: SchemaDefinition): void {
+    this.pipeline.registerToolSchema(toolName, schema);
+  }
+
+  /**
+   * Auto-discover and register all JSON policy files from a directory
+   */
+  public loadPoliciesFromDir(dirPath: string): number {
+    const fullPath = resolve(dirPath);
+    if (!existsSync(fullPath)) return 0;
+
+    let count = 0;
+    const files = readdirSync(fullPath);
+    for (const file of files) {
+      if (file.endsWith('.json') && file !== 'schema.json') {
+        try {
+          const content = JSON.parse(readFileSync(join(fullPath, file), 'utf-8'));
+          if (content.rules && Array.isArray(content.rules)) {
+            this.pipeline.registerPolicy(content);
+            count++;
+          }
+        } catch (err) {
+          console.warn(`[AegisHttpServer] Skipping malformed policy file '${file}':`, err);
+        }
+      }
+    }
+    return count;
   }
 
   private async parseJson<T>(req: IncomingMessage): Promise<T> {
@@ -32,7 +81,7 @@ export class AegisHttpServer {
       req.on('end', () => {
         try {
           resolve(body ? JSON.parse(body) : {});
-        } catch (e) {
+        } catch {
           reject(new Error('Malformed JSON request body'));
         }
       });
@@ -77,7 +126,7 @@ export class AegisHttpServer {
       return;
     }
 
-    // Dispatch Tool Intent
+    // Canonical Gateway Dispatch
     if (url === '/v1/gateway/dispatch' && method === 'POST') {
       try {
         const body = await this.parseJson<{
@@ -108,6 +157,139 @@ export class AegisHttpServer {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         this.sendJson(res, 400, { error: 'BAD_REQUEST', message });
+      }
+      return;
+    }
+
+    // SDK Route Bridge: POST /v1/intent/evaluate
+    // Evaluates policy and executes if approved, returning canonical IntentEvaluationResponse
+    if (url === '/v1/intent/evaluate' && method === 'POST') {
+      try {
+        const body = await this.parseJson<Record<string, unknown>>(req);
+
+        const agentObj = (body.agent as Record<string, unknown>) || {};
+        const agentId = (agentObj.agentId as string) || (req.headers['x-agent-id'] as string) || 'anonymous-agent';
+        const role = (agentObj.role as string) || 'operator';
+        const sessionId = (agentObj.sessionId as string) || `sess-${randomUUID()}`;
+        const intentId = (body.intentId as string) || `int-${randomUUID()}`;
+        const tool = (body.tool as string) || 'unspecified_tool';
+        const rawParams = (body.parameters as Record<string, unknown>) || {};
+        const metadata = (body.metadata as Record<string, unknown>) || {};
+
+        const context: RequestContext = {
+          sessionId,
+          agentId,
+          role,
+          tenantId: agentObj.tenantId as string | undefined
+        };
+
+        // Run through GatewayPipeline
+        const pipelineResult = await this.pipeline.processIntent(
+          {
+            intentId,
+            tool,
+            parameters: rawParams,
+            metadata
+          },
+          context
+        );
+
+        const canonicalIntent: IntentPayload = {
+          intentId,
+          timestamp: new Date().toISOString(),
+          agent: {
+            agentId,
+            role,
+            sessionId,
+            tenantId: context.tenantId
+          },
+          tool,
+          parameters: rawParams,
+          metadata
+        };
+
+        const decision: PolicyDecision = {
+          decisionId: `dec-${randomUUID()}`,
+          intentId,
+          timestamp: new Date().toISOString(),
+          status: pipelineResult.status === 'SUCCESS' ? 'APPROVED' : 
+                  pipelineResult.status === 'REQUIRES_HITL' ? 'REQUIRES_ESCALATION' : 'BLOCKED',
+          reason: pipelineResult.reason || (pipelineResult.status === 'SUCCESS' ? 'Action validated and approved' : 'Action blocked'),
+          matchedRules: pipelineResult.violations?.map(v => v.ruleId) || [],
+          violatedInvariants: pipelineResult.violations?.map(v => v.message) || [],
+          executionAllowed: pipelineResult.status === 'SUCCESS'
+        };
+
+        const responsePayload = {
+          intent: canonicalIntent,
+          decision,
+          execution: pipelineResult.execution
+        };
+
+        const httpStatus = decision.executionAllowed ? 200 : 403;
+        this.sendJson(res, httpStatus, responsePayload);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.sendJson(res, 400, { error: 'BAD_REQUEST', message });
+      }
+      return;
+    }
+
+    // SDK Route Bridge: POST /v1/tools/execute
+    // OpenAI tool-call interceptor endpoint
+    if (url === '/v1/tools/execute' && method === 'POST') {
+      try {
+        const body = await this.parseJson<{
+          tool_call_id?: string;
+          tool?: string;
+          name?: string;
+          arguments?: string | Record<string, unknown>;
+          agent_id?: string;
+          role?: string;
+        }>(req);
+
+        const toolName = body.tool || body.name || 'unspecified_tool';
+        let parsedArgs: Record<string, unknown> = {};
+        if (typeof body.arguments === 'string') {
+          try {
+            parsedArgs = JSON.parse(body.arguments);
+          } catch {
+            parsedArgs = { raw: body.arguments };
+          }
+        } else if (body.arguments && typeof body.arguments === 'object') {
+          parsedArgs = body.arguments;
+        }
+
+        const agentId = body.agent_id || (req.headers['x-agent-id'] as string) || 'openai-agent';
+        const role = body.role || 'assistant';
+        const toolCallId = body.tool_call_id || `tc-${randomUUID()}`;
+
+        const pipelineResult = await this.pipeline.processIntent(
+          {
+            intentId: toolCallId,
+            tool: toolName,
+            parameters: parsedArgs
+          },
+          {
+            agentId,
+            role,
+            sessionId: `sess-${randomUUID()}`
+          }
+        );
+
+        const isAllowed = pipelineResult.status === 'SUCCESS';
+        const httpStatus = isAllowed ? 200 : 403;
+
+        this.sendJson(res, httpStatus, {
+          tool_call_id: toolCallId,
+          verdict: isAllowed ? 'APPROVED' : pipelineResult.status,
+          allowed: isAllowed,
+          reason: pipelineResult.reason || (isAllowed ? 'Permitted by deterministic policy' : 'Policy invariant violation'),
+          execution: pipelineResult.execution
+        });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.sendJson(res, 400, { error: 'TOOL_PROXY_ERROR', message });
       }
       return;
     }
@@ -160,7 +342,7 @@ export class AegisHttpServer {
     }
 
     // 404 Not Found
-    this.sendJson(res, 404, { error: 'NOT_FOUND', message: `Route ${method} ${url} not recognized` });
+    this.sendJson(res, 404, { error: 'NOT_FOUND', message: `Route ${method} ${url} not recognized by AegisCore Gateway` });
   }
 
   public async start(port?: number): Promise<number> {
@@ -175,7 +357,6 @@ export class AegisHttpServer {
         const addr = this.server?.address();
         const actualPort = typeof addr === 'object' && addr ? addr.port : targetPort;
         this.port = actualPort;
-        console.log(`[AegisCore Gateway] 🛡️ HTTP Gateway listening on http://${this.host}:${actualPort}`);
         resolve(actualPort);
       });
 

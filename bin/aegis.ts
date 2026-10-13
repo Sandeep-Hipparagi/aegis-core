@@ -2,7 +2,9 @@
 import { AegisHttpServer } from '../src/server.ts';
 import { McpServerAdapter } from '../src/mcp/server.ts';
 import { WormAuditLedger } from '../src/audit/ledger.ts';
+import { GatewayPipeline } from '../src/gateway/pipeline.ts';
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -13,33 +15,69 @@ async function main() {
 🛡️  AegisCore CLI - Deterministic Agent Governance Gateway
 
 Usage:
-  aegis start [--port <number>]    Start HTTP Governance Gateway
-  aegis mcp                        Start MCP Protocol Stdio Daemon
-  aegis audit verify [--file <path>] Verify WORM Audit Ledger Merkle Integrity
+  aegis start [--port <number>] [--policies <dir>] [--ledger <path>]
+  aegis mcp [--policies <dir>] [--ledger <path>]
+  aegis audit verify [--file <path>]
 
 Options:
-  --port <number>   Gateway port (default: 8080)
-  --file <path>     Audit ledger log file path (default: aegis-audit.log)
-  --help, -h        Show help message
+  --port <number>     Gateway HTTP port (default: 8080)
+  --policies <dir>    Policy directory to auto-load (default: ./policies)
+  --ledger <path>     WORM audit ledger storage file (default: ./aegis-audit.log)
+  --file <path>       Ledger file for audit verification (default: ./aegis-audit.log)
+  --help, -h          Show help message
 `);
     process.exit(0);
   }
 
+  // Common CLI flag resolution
+  const getArg = (flag: string): string | undefined => {
+    const idx = args.indexOf(flag);
+    return idx !== -1 && args[idx + 1] ? args[idx + 1] : undefined;
+  };
+
+  const defaultLedgerPath = resolve('./aegis-audit.log');
+  const defaultPoliciesDir = resolve('./policies');
+
   switch (command) {
     case 'start': {
-      let port = 8080;
-      const portIdx = args.indexOf('--port');
-      if (portIdx !== -1 && args[portIdx + 1]) {
-        port = parseInt(args[portIdx + 1], 10);
-      }
+      const port = parseInt(getArg('--port') || process.env.PORT || '8080', 10);
+      const ledgerPath = getArg('--ledger') || process.env.AEGIS_AUDIT_LOG || defaultLedgerPath;
+      const policiesDir = getArg('--policies') || process.env.AEGIS_POLICIES_DIR || defaultPoliciesDir;
 
-      const server = new AegisHttpServer({ port });
+      // Initialize pipeline with persistent WORM ledger
+      const ledger = new WormAuditLedger({ storagePath: ledgerPath });
+      const pipeline = new GatewayPipeline({ ledger });
+
+      const server = new AegisHttpServer({
+        port,
+        pipeline,
+        policiesDir
+      });
+
+      const loadedPoliciesCount = server.loadPoliciesFromDir(policiesDir);
+
+      console.log(`\n🛡️  [AegisCore] Initializing Gateway Daemon...`);
+      console.log(`🛡️  [AegisCore] Audit Ledger:   ${ledgerPath}`);
+      console.log(`🛡️  [AegisCore] Policies Loaded: ${loadedPoliciesCount} files from ${policiesDir}`);
+
       await server.start();
       break;
     }
 
     case 'mcp': {
-      const mcp = new McpServerAdapter();
+      const ledgerPath = getArg('--ledger') || process.env.AEGIS_AUDIT_LOG || defaultLedgerPath;
+      const policiesDir = getArg('--policies') || process.env.AEGIS_POLICIES_DIR || defaultPoliciesDir;
+
+      const ledger = new WormAuditLedger({ storagePath: ledgerPath });
+      const pipeline = new GatewayPipeline({ ledger });
+
+      // Auto-load policies into MCP pipeline
+      if (existsSync(policiesDir)) {
+        const serverHelper = new AegisHttpServer({ pipeline, policiesDir });
+        serverHelper.loadPoliciesFromDir(policiesDir);
+      }
+
+      const mcp = new McpServerAdapter(pipeline);
       mcp.startStdio();
       break;
     }
@@ -47,11 +85,7 @@ Options:
     case 'audit': {
       const subCommand = args[1];
       if (subCommand === 'verify') {
-        let filePath = 'aegis-audit.log';
-        const fileIdx = args.indexOf('--file');
-        if (fileIdx !== -1 && args[fileIdx + 1]) {
-          filePath = args[fileIdx + 1];
-        }
+        const filePath = getArg('--file') || defaultLedgerPath;
 
         if (!existsSync(filePath)) {
           console.log(`[AegisCore Audit] No ledger file found at '${filePath}'. New ledger has 0 entries (valid).`);

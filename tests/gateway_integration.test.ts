@@ -251,4 +251,115 @@ describe('Gateway Integration - HTTP Server, Pipeline & MCP Protocol', () => {
     assert.equal(integrity.brokenAtIndex, undefined);
   });
 
+  it('should evaluate intent via SDK route POST /v1/intent/evaluate', async () => {
+    const res = await fetch(`${baseUrl}/v1/intent/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'check_balance',
+        parameters: { accountId: 'ACC-EVAL-01' },
+        context: {
+          sessionId: 'sess-eval-1',
+          agentId: 'agent-eval',
+          role: 'analyst'
+        }
+      })
+    });
+
+    assert.equal(res.status, 200);
+    const data = await res.json() as {
+      intent: { tool: string; parameters: { accountId: string } };
+      decision: { status: string; executionAllowed: boolean };
+      execution?: { status: string; output: { accountId: string } };
+    };
+
+    assert.equal(data.decision.status, 'APPROVED');
+    assert.equal(data.decision.executionAllowed, true);
+    assert.equal(data.execution?.status, 'SUCCESS');
+    assert.equal(data.execution?.output.accountId, 'ACC-EVAL-01');
+  });
+
+  it('should proxy OpenAI tool calls via POST /v1/tools/execute', async () => {
+    const res = await fetch(`${baseUrl}/v1/tools/execute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-agent-id': 'openai-agent-01'
+      },
+      body: JSON.stringify({
+        tool_call_id: 'call_999abc',
+        name: 'check_balance',
+        arguments: JSON.stringify({ accountId: 'ACC-OPENAI-01' }),
+        role: 'assistant'
+      })
+    });
+
+    assert.equal(res.status, 200);
+    const data = await res.json() as {
+      tool_call_id: string;
+      verdict: string;
+      allowed: boolean;
+      execution?: { status: string; output: { accountId: string } };
+    };
+
+    assert.equal(data.tool_call_id, 'call_999abc');
+    assert.equal(data.verdict, 'APPROVED');
+    assert.equal(data.allowed, true);
+    assert.equal(data.execution?.output.accountId, 'ACC-OPENAI-01');
+  });
+
+  it('should enforce DPDP policy pack invariants loaded into the pipeline', async () => {
+    // Load policies from policies directory
+    server.loadPoliciesFromDir('./policies');
+    const pipeline = server.getPipeline();
+
+    // Register test schemas for DPDP actions
+    pipeline.registerToolSchema('query_database', {
+      name: 'QueryDbSchema',
+      strict: false
+    });
+    pipeline.registerToolSchema('export_customer_dataset', {
+      name: 'ExportDatasetSchema',
+      strict: false
+    });
+
+    // Case 1: Agent attempts to query forbidden aadhaar_vault
+    const blockedRes = await fetch(`${baseUrl}/v1/gateway/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'query_database',
+        parameters: { targetTable: 'aadhaar_vault' },
+        context: {
+          sessionId: 'sess-dpdp-block',
+          agentId: 'rogue-agent',
+          role: 'analyst'
+        }
+      })
+    });
+    assert.equal(blockedRes.status, 403);
+    const blockedData = await blockedRes.json() as { status: string; violations: Array<{ ruleId: string }> };
+    assert.equal(blockedData.status, 'BLOCKED');
+    assert(blockedData.violations.some(v => v.ruleId === 'DPDP-002-BLOCK-UNMASKED-IDENTITY-TARGETS'));
+
+    // Case 2: Agent attempts bulk export > 100 records -> requires HITL
+    const exportRes = await fetch(`${baseUrl}/v1/gateway/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'export_customer_dataset',
+        parameters: { recordCount: 500, format: 'csv' },
+        context: {
+          sessionId: 'sess-dpdp-export',
+          agentId: 'marketing-bot',
+          role: 'marketing'
+        }
+      })
+    });
+    assert.equal(exportRes.status, 200);
+    const exportData = await exportRes.json() as { status: string; challenge?: { ticketId: string } };
+    assert.equal(exportData.status, 'REQUIRES_HITL');
+    assert(exportData.challenge?.ticketId !== undefined);
+  });
+
 });

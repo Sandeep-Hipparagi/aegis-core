@@ -177,6 +177,14 @@ export class McpServerAdapter {
    * Start listening on stdio streams
    */
   public startStdio(): void {
+    // Redirect stdout logging to stderr to prevent JSON-RPC protocol framing corruption
+    console.log = (...args: unknown[]) => {
+      process.stderr.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    };
+    console.info = (...args: unknown[]) => {
+      process.stderr.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    };
+
     const rl = createInterface({
       input: process.stdin,
       output: process.stdout,

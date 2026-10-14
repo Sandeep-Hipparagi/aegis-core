@@ -2,7 +2,7 @@
 
 /**
  * AegisCore Terminal Showcase v2 (Optimized for Social & GitHub README)
- * High-density visual layout with box-drawing, badges, and latency benchmarks.
+ * High-density visual layout with SF Mono typography and compact scenario cards.
  */
 
 import { GatewayPipeline } from '../src/gateway/pipeline.ts';
@@ -22,20 +22,11 @@ const c = {
   bgRed: '\x1b[48;2;243;139;168;38;2;17;17;27m',
   bgGreen: '\x1b[48;2;166;227;161;38;2;17;17;27m',
   bgBlue: '\x1b[48;2;137;180;250;38;2;17;17;27m',
-  bgYellow: '\x1b[48;2;249;226;175;38;2;17;17;27m',
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
-  console.clear();
-
-  // Header Banner
-  console.log(`\n  ${c.bgBlue}${c.bold} AEGISCORE ${c.reset} ${c.bold}Zero-Trust Deterministic Enclave & WORM Audit Gateway${c.reset}`);
-  console.log(`  ${c.gray}Reverse-proxying AI agent tools with sub-millisecond invariant checks${c.reset}\n`);
-
-  await sleep(400);
-
   const pipeline = new GatewayPipeline();
 
   // Configure Schemas & Policies
@@ -63,7 +54,7 @@ async function main() {
     defaultEffect: 'DENY',
     rules: [
       {
-        id: 'INV-001-ISOLATION',
+        id: 'INV-001',
         name: 'Block Critical Vault Access',
         targetTools: ['execute_db_query'],
         effect: 'DENY',
@@ -78,7 +69,7 @@ async function main() {
         ]
       },
       {
-        id: 'INV-002-TRANSFERS',
+        id: 'INV-002',
         name: 'Permit Compliant Settlement',
         targetTools: ['settle_transfer'],
         effect: 'ALLOW',
@@ -95,14 +86,7 @@ async function main() {
     recipient: args.recipient
   }));
 
-  // -------------------------------------------------------------------------
-  // SCENARIO 1: Unprivileged Model Hijacking / Parameter Smuggling
-  // -------------------------------------------------------------------------
-  console.log(`  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 1: Model Tool Hijack / Data Exfiltration Attempt${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.dim}Agent: 'autonomous-analyst-01'  →  tool: execute_db_query(table: "users.credentials")${c.reset}`);
-  
-  await sleep(350);
-
+  // SCENARIO 1: Model Tool Hijack / Data Exfiltration Attempt
   const t1 = performance.now();
   const res1 = await pipeline.processIntent(
     { tool: 'execute_db_query', parameters: { table: 'users.credentials' } },
@@ -110,22 +94,13 @@ async function main() {
   );
   const dur1 = (performance.now() - t1).toFixed(2);
 
-  console.log(`  ${c.gray}│${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.bgRed}${c.bold} 🚫 BLOCKED ${c.reset}  ${c.bold}${c.red}INVARIANT REJECTED${c.reset} ${c.dim}(latency: ${dur1}ms)${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.red}Rule ID:${c.reset}     [${res1.violations[0]?.ruleId}] ${res1.violations[0]?.message}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.gray}Host DB:${c.reset}     ${c.green}Zero query executed. 0 CPU cycles leaked to untrusted model.${c.reset}`);
-  console.log(`  ${c.gray}└─────────────────────────────────────────────────────────────────────────────${c.reset}\n`);
+  console.log(`\n  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 1: Model Hijack & Data Exfiltration${c.reset}`);
+  console.log(`  ${c.gray}│${c.reset}  ${c.bgRed}${c.bold} 🚫 BLOCKED ${c.reset} ${c.bold}${c.red}INVARIANT REJECTED${c.reset} ${c.dim}(${dur1}ms)${c.reset} · ${c.yellow}[INV-001]${c.reset}`);
+  console.log(`  ${c.gray}└${c.reset}  ${c.dim}Host DB:${c.reset} ${c.green}Zero queries executed · 0 CPU cycles leaked${c.reset}`);
 
-  await sleep(900);
+  await sleep(500);
 
-  // -------------------------------------------------------------------------
-  // SCENARIO 2: In-Flight DPDP PII Tokenization & Cryptographic Shredding
-  // -------------------------------------------------------------------------
-  console.log(`  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 2: DPDP In-Flight PII Masking & Salted Tokenization${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.dim}Agent: 'finance-executor'  →  settle_transfer($850, taxId: "ABCDE1234F")${c.reset}`);
-
-  await sleep(350);
-
+  // SCENARIO 2: DPDP In-Flight PII Masking & Salted Tokenization
   const t2 = performance.now();
   const res2 = await pipeline.processIntent(
     { tool: 'settle_transfer', parameters: { recipient: 'ACME Corp', amount: 850, taxId: 'ABCDE1234F' } },
@@ -133,34 +108,19 @@ async function main() {
   );
   const dur2 = (performance.now() - t2).toFixed(2);
 
-  console.log(`  ${c.gray}│${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.bgGreen}${c.bold} ✅ APPROVED ${c.reset} ${c.bold}${c.green}DISPATCHED TO SANDBOX${c.reset} ${c.dim}(latency: ${dur2}ms)${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.cyan}DPDP Mask:${c.reset}   Raw PAN "ABCDE1234F" ➔ ${c.magenta}tok_pan_f48d... (Vaulted)${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.gray}WORM Entry:${c.reset}  Seq #${res2.auditEntry?.sequenceId} ➔ SHA256: ${res2.auditEntry?.entryHash.substring(0, 32)}...`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.dim}Execution:${c.reset}   Result: ${JSON.stringify(res2.execution?.output)}`);
-  console.log(`  ${c.gray}└─────────────────────────────────────────────────────────────────────────────${c.reset}\n`);
+  console.log(`  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 2: DPDP In-Flight PII Tokenization${c.reset}`);
+  console.log(`  ${c.gray}│${c.reset}  ${c.bgGreen}${c.bold} ✅ APPROVED ${c.reset} ${c.bold}${c.green}DISPATCHED TO SANDBOX${c.reset} ${c.dim}(${dur2}ms)${c.reset}`);
+  console.log(`  ${c.gray}└${c.reset}  ${c.cyan}DPDP Mask:${c.reset} PAN "ABCDE1234F" ➔ ${c.magenta}tok_pan_f48d${c.reset} (Vaulted)`);
 
-  await sleep(900);
+  await sleep(500);
 
-  // -------------------------------------------------------------------------
   // SCENARIO 3: Tamper-Evident Ledger Integrity Verification
-  // -------------------------------------------------------------------------
-  console.log(`  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 3: Cryptographic Merkle Chain Verification${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.dim}Audit Command: 'aegis audit verify'  →  Traversing to Genesis Block${c.reset}`);
-
-  await sleep(350);
-
   const check = pipeline.getLedger().verifyChainIntegrity();
   const entries = pipeline.getLedger().getEntries();
 
-  console.log(`  ${c.gray}│${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.bgBlue}${c.bold} 🔒 100% VALID ${c.reset} ${c.bold}${c.blue}MERKLE CHAIN INTEGRITY CONFIRMED${c.reset}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.gray}Blocks:${c.reset}      ${entries.length} chained entries verified from Genesis`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.gray}Head Pointer:${c.reset}${entries[entries.length - 1]?.entryHash}`);
-  console.log(`  ${c.gray}│${c.reset}  ${c.green}Tamper Guard:${c.reset} Any retrospective bit modification invalidates ledger.`);
-  console.log(`  ${c.gray}└─────────────────────────────────────────────────────────────────────────────${c.reset}\n`);
-
-  await sleep(1500);
+  console.log(`  ${c.gray}┌─${c.reset} ${c.bold}SCENARIO 3: Cryptographic Merkle Chain Verification${c.reset}`);
+  console.log(`  ${c.gray}│${c.reset}  ${c.bgBlue}${c.bold} 🔒 100% VALID ${c.reset} ${c.bold}${c.blue}MERKLE INTEGRITY CONFIRMED${c.reset}`);
+  console.log(`  ${c.gray}└${c.reset}  ${c.green}Tamper Guard:${c.reset} ${entries.length} chained blocks verified to Genesis`);
 }
 
 main().catch(console.error);

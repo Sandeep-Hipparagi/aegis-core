@@ -1,9 +1,9 @@
-# @aegiscore/sdk
+# @aegiscore-ai/sdk
 
 Lightweight, zero-dependency client SDK for **AegisCore** — the Deterministic Zero-Trust Policy & Cryptographic WORM Audit Gateway for AI Agents.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![NPM Version](https://img.shields.io/npm/v/@aegiscore/sdk.svg)](https://www.npmjs.com/package/@aegiscore/sdk)
+[![NPM Version](https://img.shields.io/npm/v/@aegiscore-ai/sdk.svg)](https://www.npmjs.com/package/@aegiscore-ai/sdk)
 
 ## Features
 
@@ -17,7 +17,7 @@ Lightweight, zero-dependency client SDK for **AegisCore** — the Deterministic 
 ## Installation
 
 ```bash
-npm install @aegiscore/sdk
+npm install @aegiscore-ai/sdk
 ```
 
 ## Quick Start
@@ -25,7 +25,7 @@ npm install @aegiscore/sdk
 ### 1. General Intent Evaluation (`AegisClient`)
 
 ```typescript
-import { AegisClient } from '@aegiscore/sdk';
+import { AegisClient } from '@aegiscore-ai/sdk';
 
 const aegis = new AegisClient({
   gatewayUrl: 'http://localhost:8080',
@@ -49,7 +49,7 @@ if (response.decision.executionAllowed) {
 ### 2. OpenAI Function / Tool Call Interception
 
 ```typescript
-import { AegisOpenAIInterceptor } from '@aegiscore/sdk';
+import { AegisOpenAIInterceptor } from '@aegiscore-ai/sdk';
 
 const interceptor = new AegisOpenAIInterceptor({
   gatewayUrl: 'http://localhost:8080',
@@ -70,7 +70,7 @@ for (const toolCall of message.tool_calls) {
 ### 3. Model Context Protocol (MCP) Interceptor
 
 ```typescript
-import { AegisMCPInterceptor } from '@aegiscore/sdk';
+import { AegisMCPInterceptor } from '@aegiscore-ai/sdk';
 
 const mcpInterceptor = new AegisMCPInterceptor({
   gatewayUrl: 'http://localhost:8080',
@@ -90,7 +90,7 @@ const toolResponse = await mcpInterceptor.interceptCallTool({
 ### 4. LangGraph / LangChain Tool Wrapper
 
 ```typescript
-import { AegisLangGraphWrapper } from '@aegiscore/sdk';
+import { AegisLangGraphWrapper } from '@aegiscore-ai/sdk';
 
 const wrapper = new AegisLangGraphWrapper({
   gatewayUrl: 'http://localhost:8080',

@@ -1,5 +1,5 @@
 {
-  "name": "@aegiscore/sdk",
+  "name": "@aegiscore-ai/sdk",
   "version": "0.1.0",
   "description": "Lightweight client SDK for AegisCore deterministic agent governance (MCP, OpenAI, LangGraph)",
   "main": "./dist/index.js",

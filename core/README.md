@@ -1,13 +1,13 @@
-# @aegiscore/core
+# @aegiscore-ai/core
 
 Deterministic Zero-Trust Policy Engine, Cryptographic WORM Audit Ledger, and Isolated Execution Boundary for AI Agents.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![NPM Version](https://img.shields.io/npm/v/@aegiscore/core.svg)](https://www.npmjs.com/package/@aegiscore/core)
+[![NPM Version](https://img.shields.io/npm/v/@aegiscore-ai/core.svg)](https://www.npmjs.com/package/@aegiscore-ai/core)
 
 ## Overview
 
-Frontier LLMs emit non-deterministic tool call payloads that cannot be trusted with direct execution privileges. `@aegiscore/core` provides the embedded systems foundation for deterministic agent governance:
+Frontier LLMs emit non-deterministic tool call payloads that cannot be trusted with direct execution privileges. `@aegiscore-ai/core` provides the embedded systems foundation for deterministic agent governance:
 
 1. **Deterministic Schema Invariants**: Fail-closed strict validation enforcing typed contracts.
 2. **Declarative Invariant Policy Engine**: High-precedence invariant rules (rate limits, transaction thresholds, blacklisted schemas).
@@ -19,7 +19,7 @@ Frontier LLMs emit non-deterministic tool call payloads that cannot be trusted w
 ## Installation
 
 ```bash
-npm install @aegiscore/core
+npm install @aegiscore-ai/core
 ```
 
 ## Programmatic Usage
@@ -32,7 +32,7 @@ import {
   WormAuditLedger,
   SandboxRunner,
   AegisHttpServer
-} from '@aegiscore/core';
+} from '@aegiscore-ai/core';
 
 // 1. Initialize Core Pipeline
 const pipeline = new GatewayPipeline();
@@ -71,7 +71,7 @@ console.log('Result Status:', result.status);
 ## Standalone Gateway Daemon
 
 ```typescript
-import { launchAegisGateway } from '@aegiscore/core';
+import { launchAegisGateway } from '@aegiscore-ai/core';
 
 // Launches HTTP gateway and registers policy packs from ./policies
 const server = await launchAegisGateway(8080);

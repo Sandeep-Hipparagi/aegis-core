@@ -71,7 +71,7 @@ AegisCore sits directly between your autonomous agent framework (OpenAI, LangGra
 - **Evaluation Latency**: Evaluates schemas and policy invariants in **< 1.5 milliseconds**.
 - **Zero Heavy Runtime Dependencies**: Pure native Node.js runtime and zero-dependency Python client.
 - **Language & Framework Support**:
-  - TypeScript/Node: `@aegiscore/core` and `@aegiscore/sdk`
+  - TypeScript/Node: `@aegiscore-ai/core` and `@aegiscore-ai/sdk`
   - Python: `aegiscore` (`pip install aegiscore`)
   - Protocol: Model Context Protocol (MCP) stdio and HTTP/JSON REST API (`POST /v1/gateway/dispatch`)
   - Framework Adapters: LangGraph, LangChain, OpenAI Tool Calling, Claude Desktop

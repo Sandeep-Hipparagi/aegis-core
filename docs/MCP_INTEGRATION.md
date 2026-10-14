@@ -53,7 +53,7 @@ To route all tool calls in Claude Desktop through AegisCore:
 }
 ```
 
-*When installed globally via npm (`npm install -g @aegiscore/core`):*
+*When installed globally via npm (`npm install -g @aegiscore-ai/core`):*
 ```json
 {
   "mcpServers": {
@@ -77,7 +77,7 @@ For Cursor or VSCode Cline extension settings:
     "aegis-gateway": {
       "type": "stdio",
       "command": "npx",
-      "args": ["@aegiscore/core", "mcp"]
+      "args": ["@aegiscore-ai/core", "mcp"]
     }
   }
 }

@@ -46,8 +46,8 @@ Command: 'aegis audit verify' — Traversing cryptographic pointers to Genesis
 
 | Package | Language / Protocol | Status | Description |
 |---|---|---|---|
-| [`@aegiscore/core`](core) | Node.js / TypeScript | Available | Core deterministic engine, WORM ledger, and HTTP gateway daemon |
-| [`@aegiscore/sdk`](sdk) | TypeScript | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP |
+| [`@aegiscore-ai/core`](core) | Node.js / TypeScript | Available | Core deterministic engine, WORM ledger, and HTTP gateway daemon |
+| [`@aegiscore-ai/sdk`](sdk) | TypeScript | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP |
 | [`aegiscore`](sdk/python) | Python (>=3.8) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen |
 | [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
 | [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |

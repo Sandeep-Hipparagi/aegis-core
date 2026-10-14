@@ -12,6 +12,8 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
+      "@aegiscore-ai/core": ["./core/src/index.ts"],
+      "@aegiscore-ai/sdk": ["./sdk/src/index.ts"],
       "@aegiscore/core": ["./core/src/index.ts"],
       "@aegiscore/sdk": ["./sdk/src/index.ts"]
     }

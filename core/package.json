@@ -1,5 +1,5 @@
 {
-  "name": "@aegiscore/core",
+  "name": "@aegiscore-ai/core",
   "version": "0.1.0",
   "description": "Deterministic zero-trust policy engine, cryptographic WORM ledger, and isolated sandbox for AI agents",
   "main": "./dist/index.js",

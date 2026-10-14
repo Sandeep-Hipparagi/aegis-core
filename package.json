@@ -16,6 +16,7 @@
     "build:clean": "node scripts/build-packages.js",
     "start:gateway": "node --experimental-strip-types core/src/index.ts",
     "demo:banking": "node --experimental-strip-types examples/banking-agent.ts",
+    "demo:showcase": "node --experimental-strip-types scripts/terminal-demo-v2.js",
     "test": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts",
     "test:python": "python -c \"import sys; sys.path.insert(0, 'sdk/python'); import unittest; unittest.main(module=None, argv=['', 'discover', '-s', 'sdk/python/tests'])\"",
     "test:all": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts && node --experimental-strip-types examples/banking-agent.ts && npm run test:python"

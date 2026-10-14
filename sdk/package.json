@@ -1,8 +1,37 @@
 {
   "name": "@aegiscore/sdk",
   "version": "0.1.0",
-  "description": "Lightweight client SDK for AegisCore deterministic agent governance",
-  "main": "src/index.ts",
+  "description": "Lightweight client SDK for AegisCore deterministic agent governance (MCP, OpenAI, LangGraph)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "keywords": [
+    "aegiscore",
+    "ai-agent",
+    "governance",
+    "security",
+    "zero-trust",
+    "mcp",
+    "langgraph",
+    "openai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sandeep-Hipparagi/aegis-core.git",
+    "directory": "sdk"
+  },
+  "author": "Sandeep Hipparagi & AegisCore Contributors",
   "license": "Apache-2.0"
 }

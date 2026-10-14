@@ -1,5 +1,10 @@
 # Dependencies
 node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
 
 # Build outputs
 dist/

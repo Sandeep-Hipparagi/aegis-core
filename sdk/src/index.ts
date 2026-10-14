@@ -1,7 +1,8 @@
-import type { IntentPayload, PolicyDecision, ExecutionResult } from '../../core/src/types.ts';
+export * from './types.ts';
 export * from './openai.ts';
 export * from './mcp.ts';
 export * from './langgraph.ts';
+import type { IntentPayload, PolicyDecision, ExecutionResult } from './types.ts';
 
 export interface AegisClientOptions {
   gatewayUrl?: string;

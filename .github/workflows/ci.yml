@@ -37,8 +37,19 @@ jobs:
           node -v
           npm -v
 
+      - name: Compile Distribution Bundles
+        run: npm run build
+
       - name: Run Full Test Suite
         run: npm test
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Python SDK Tests
+        run: npm run test:python
 
       - name: Run Live Banking Invariant Demonstration
         run: npm run demo:banking

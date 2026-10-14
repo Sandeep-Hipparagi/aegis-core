@@ -7,12 +7,18 @@
   "bin": {
     "aegis": "./bin/aegis.ts"
   },
+  "workspaces": [
+    "core",
+    "sdk"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node scripts/build-packages.js",
+    "build:clean": "node scripts/build-packages.js",
     "start:gateway": "node --experimental-strip-types core/src/index.ts",
     "demo:banking": "node --experimental-strip-types examples/banking-agent.ts",
     "test": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts",
-    "test:all": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts && node --experimental-strip-types examples/banking-agent.ts"
+    "test:python": "python -c \"import sys; sys.path.insert(0, 'sdk/python'); import unittest; unittest.main(module=None, argv=['', 'discover', '-s', 'sdk/python/tests'])\"",
+    "test:all": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts && node --experimental-strip-types examples/banking-agent.ts && npm run test:python"
   },
   "keywords": [
     "ai-agent",

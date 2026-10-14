@@ -1,4 +1,4 @@
-import type { IntentPayload, PolicyDecision, ExecutionResult } from '../../core/src/types.ts';
+import type { IntentPayload, PolicyDecision, ExecutionResult } from './types.ts';
 
 export interface OpenAIToolCall {
   id: string;

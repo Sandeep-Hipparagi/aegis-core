@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegiscore"
+version = "0.1.0"
+description = "Deterministic Agent Governance Gateway - Zero-Trust Policy Enclave for AI Agents"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Sandeep Hipparagi & AegisCore Contributors" }
+]
+keywords = [
+    "ai-agent",
+    "governance",
+    "security",
+    "zero-trust",
+    "langgraph",
+    "openai",
+    "mcp",
+    "dpdp"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Sandeep-Hipparagi/aegis-core"
+Repository = "https://github.com/Sandeep-Hipparagi/aegis-core.git"
+Issues = "https://github.com/Sandeep-Hipparagi/aegis-core/issues"

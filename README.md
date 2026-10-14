@@ -2,11 +2,56 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](sdk/python)
 [![CI](https://img.shields.io/badge/CI-Passing-brightgreen.svg)](.github/workflows/ci.yml)
 [![Zero-Trust](https://img.shields.io/badge/Security-Zero--Trust_Enclave-red.svg)](#zero-trust-architecture)
-[![DPDP Ready](https://img.shields.io/badge/Compliance-DPDP_Ready-orange.svg)](#dpdp-compliant-pii-sanitization)
+[![DPDP Ready](https://img.shields.io/badge/Compliance-DPDP_Ready-orange.svg)](docs/DPDP_COMPLIANCE.md)
 
-> **AegisCore** is an open-source reverse-proxy and deterministic policy enclave for AI agents. It intercepts model tool calls, validates them against strict schemas and deterministic invariants, and only executes approved actions within an isolated boundary.
+> **AegisCore** is an open-source reverse-proxy, deterministic invariant policy enclave, and cryptographic WORM audit ledger for autonomous AI agents. It intercepts model tool calls, validates them against strict schemas and deterministic invariants, and only executes approved actions within an isolated boundary.
+
+---
+
+### 📺 30-Second Terminal Showcase
+
+```text
+╔═══════════════════════════════════════════════════════════════════════════════════════╗
+║   🛡️  AEGISCORE — Deterministic Zero-Trust Policy Enclave & WORM Audit Gateway       ║
+╚═══════════════════════════════════════════════════════════════════════════════════════╝
+
+[STEP 1/3] Intercepting Out-of-Bounds Agent Mutation...
+Agent: 'autonomous-analyst-07' | Tool: 'query_database' | Target: 'users.credentials'
+  🚫 VERDICT: [BLOCKED] in 1.42ms
+  Reason:     [INVARIANT REJECTED] Target table is blacklisted by zero-trust invariant
+  Sandbox:    Tool execution prevented with 0 CPU cycles on host database.
+
+[STEP 2/3] In-Flight DPDP PII Tokenization & Cryptographic Ledgering...
+Agent requests compliant transfer with sensitive Indian PAN: 'ABCDE1234F'
+  ✅ VERDICT: [APPROVED & EXECUTED] in 0.93ms
+  PII Masking: Raw PAN masked to ephemeral token in immutable audit record.
+  Ledger Seq:  Entry #2 | Prev Hash: f38ebf8cc2ffc3215ca31e8d...
+  Entry Hash:  f2480954b7569dcda891cb2e61ecf2b5a09b8cba758a7177f2d3b49afd921daf
+
+[STEP 3/3] Verifying Tamper-Evident WORM Merkle Ledger...
+Command: 'aegis audit verify' — Traversing cryptographic pointers to Genesis
+  🔒 INTEGRITY CHECK: PASSED (100% VALID)
+  Total Entries: 2 | Genesis Hash: 0000000000000000000000000000000000000000000000000000000000000000
+  Head Entry:    f2480954b7569dcda891cb2e61ecf2b5a09b8cba758a7177f2d3b49afd921daf
+```
+
+*Run this live:* `node --experimental-strip-types scripts/terminal-demo.js`
+
+---
+
+## 📦 Developer Packages & Distribution
+
+| Package | Language / Protocol | Status | Description |
+|---|---|---|---|
+| [`@aegiscore/core`](core) | Node.js / TypeScript | Available | Core deterministic engine, WORM ledger, and HTTP gateway daemon |
+| [`@aegiscore/sdk`](sdk) | TypeScript | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP |
+| [`aegiscore`](sdk/python) | Python (>=3.8) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen |
+| [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
+| [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |
+| [Show HN](docs/SHOW_HN.md) | Community | Ready | Hacker News launch narrative & technical breakdown |
 
 ---
 

@@ -1,20 +1,19 @@
-# VHS Tape configuration for AegisCore Visual Demo
-# Install VHS: https://github.com/charmbracelet/vhs
-# Run: vhs demo.tape
+# AegisCore VHS Terminal Recording Tape
+# Generate gif: vhs demo.tape
 
 Output assets/demo.gif
 
-Set FontSize 16
-Set Width 1200
-Set Height 680
+Set FontSize 15
+Set FontFamily "JetBrains Mono"
+Set Width 1100
+Set Height 640
 Set Padding 20
 Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
+Set TypingSpeed 40ms
 
-Type "node --experimental-strip-types bin/aegis.ts audit verify"
+Type "node --experimental-strip-types scripts/terminal-demo.js"
+Sleep 600ms
 Enter
-Sleep 2s
 
-Type "node --experimental-strip-types examples/banking-agent.ts"
-Enter
-Sleep 6s
+Sleep 8s

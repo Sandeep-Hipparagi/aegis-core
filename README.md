@@ -11,40 +11,51 @@
 
 ---
 
-### 📺 30-Second Terminal Showcase
+### 📺 Terminal Showcases & Scenario Deep-Dives
 
 <p align="center">
-  <img src="assets/demo.gif" alt="AegisCore Deterministic Gateway Demo" width="850">
+  <img src="assets/demo.gif" alt="AegisCore Deterministic Gateway Overview" width="900">
 </p>
 
-<details>
-<summary><b>Click to view text output</b></summary>
-╔═══════════════════════════════════════════════════════════════════════════════════════╗
-║   🛡️  AEGISCORE — Deterministic Zero-Trust Policy Enclave & WORM Audit Gateway       ║
-╚═══════════════════════════════════════════════════════════════════════════════════════╝
+<details open>
+<summary><b>🎯 Focused Scenario Showcases (Click to Expand)</b></summary>
+<br/>
 
-[STEP 1/3] Intercepting Out-of-Bounds Agent Mutation...
-Agent: 'autonomous-analyst-07' | Tool: 'query_database' | Target: 'users.credentials'
-  🚫 VERDICT: [BLOCKED] in 1.42ms
-  Reason:     [INVARIANT REJECTED] Target table is blacklisted by zero-trust invariant
-  Sandbox:    Tool execution prevented with 0 CPU cycles on host database.
+#### Scenario 01: Model Tool Hijack & Data Exfiltration Defense
+> **Threat Vector**: Indirect prompt injection instructs an autonomous agent to dump `users.credentials`.  
+> **AegisCore Defense**: Deterministic boundary rejection in $<2\text{ ms}$ with **0 CPU cycles** or sockets opened to the host database.
 
-[STEP 2/3] In-Flight DPDP PII Tokenization & Cryptographic Ledgering...
-Agent requests compliant transfer with sensitive Indian PAN: 'ABCDE1234F'
-  ✅ VERDICT: [APPROVED & EXECUTED] in 0.93ms
-  PII Masking: Raw PAN masked to ephemeral token in immutable audit record.
-  Ledger Seq:  Entry #2 | Prev Hash: f38ebf8cc2ffc3215ca31e8d...
-  Entry Hash:  f2480954b7569dcda891cb2e61ecf2b5a09b8cba758a7177f2d3b49afd921daf
+<p align="center">
+  <img src="assets/demo-scenario-1.gif" alt="Scenario 1: Model Hijack Intercept" width="880">
+</p>
 
-[STEP 3/3] Verifying Tamper-Evident WORM Merkle Ledger...
-Command: 'aegis audit verify' — Traversing cryptographic pointers to Genesis
-  🔒 INTEGRITY CHECK: PASSED (100% VALID)
-  Total Entries: 2 | Genesis Hash: 0000000000000000000000000000000000000000000000000000000000000000
-  Head Entry:    f2480954b7569dcda891cb2e61ecf2b5a09b8cba758a7177f2d3b49afd921daf
-```
+*Run live:* `node --experimental-strip-types scripts/demo-scenario-1.js`
+
+---
+
+#### Scenario 02: In-Flight DPDP PII Masking & Cryptographic Shredding
+> **Threat Vector**: Agent processes personal identifiers (Indian PAN / Aadhaar), conflicting with statutory Right to Erasure under India's DPDP Act.  
+> **AegisCore Defense**: In-flight salted tokenization before WORM ledgering. `shredVault()` enforces complete erasure while preserving 100% of the cryptographic Merkle chain.
+
+<p align="center">
+  <img src="assets/demo-scenario-2.gif" alt="Scenario 2: In-Flight DPDP PII Masking" width="880">
+</p>
+
+*Run live:* `node --experimental-strip-types scripts/demo-scenario-2.js`
+
+---
+
+#### Scenario 03: Cryptographic Merkle Chain & Tamper-Evident Audit
+> **Threat Vector**: Retrospective tampering of agent execution logs to conceal unauthorized actions.  
+> **AegisCore Defense**: Write-Once-Read-Many (WORM) append-only ledger with cryptographic SHA-256 block traversal back to Genesis. Any bit alteration breaks chain validation.
+
+<p align="center">
+  <img src="assets/demo-scenario-3.gif" alt="Scenario 3: Tamper-Evident WORM Audit" width="880">
+</p>
+
+*Run live:* `node --experimental-strip-types scripts/demo-scenario-3.js`
+
 </details>
-
-*Run this live:* `node --experimental-strip-types scripts/terminal-demo.js`
 
 ---
 

@@ -13,7 +13,12 @@
 
 ### 📺 30-Second Terminal Showcase
 
-```text
+<p align="center">
+  <img src="assets/demo.gif" alt="AegisCore Deterministic Gateway Demo" width="850">
+</p>
+
+<details>
+<summary><b>Click to view text output</b></summary>
 ╔═══════════════════════════════════════════════════════════════════════════════════════╗
 ║   🛡️  AEGISCORE — Deterministic Zero-Trust Policy Enclave & WORM Audit Gateway       ║
 ╚═══════════════════════════════════════════════════════════════════════════════════════╝
@@ -37,6 +42,7 @@ Command: 'aegis audit verify' — Traversing cryptographic pointers to Genesis
   Total Entries: 2 | Genesis Hash: 0000000000000000000000000000000000000000000000000000000000000000
   Head Entry:    f2480954b7569dcda891cb2e61ecf2b5a09b8cba758a7177f2d3b49afd921daf
 ```
+</details>
 
 *Run this live:* `node --experimental-strip-types scripts/terminal-demo.js`
 

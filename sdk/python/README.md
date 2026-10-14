@@ -3,15 +3,15 @@
 Official, zero-dependency Python client for **AegisCore** — the Deterministic Zero-Trust Policy & Cryptographic WORM Audit Gateway for AI Agents.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://pypi.org/project/aegiscore/)
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://pypi.org/project/aegiscore-ai/)
 
 ## Installation
 
 ```bash
-pip install aegiscore
+pip install aegiscore-ai
 ```
 
-*Note: `aegiscore` is 100% zero-dependency, implemented purely using Python's standard library (`urllib.request`, `json`, `dataclasses`).*
+*Note: `aegiscore-ai` is 100% zero-dependency, implemented purely using Python's standard library (`urllib.request`, `json`, `dataclasses`).*
 
 ## Quick Start
 

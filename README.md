@@ -1,8 +1,9 @@
 # 🛡️ AegisCore: The Zero-Trust Deterministic Governance Enclave for AI Agents
 
+[![npm version](https://img.shields.io/npm/v/@aegiscore-ai/core.svg?label=%40aegiscore-ai%2Fcore)](https://www.npmjs.com/package/@aegiscore-ai/core)
+[![npm sdk](https://img.shields.io/npm/v/@aegiscore-ai/sdk.svg?label=%40aegiscore-ai%2Fsdk)](https://www.npmjs.com/package/@aegiscore-ai/sdk)
+[![PyPI version](https://img.shields.io/pypi/v/aegiscore-ai.svg?label=pypi%20aegiscore-ai)](https://pypi.org/project/aegiscore-ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](sdk/python)
 [![CI](https://img.shields.io/badge/CI-Passing-brightgreen.svg)](.github/workflows/ci.yml)
 [![Zero-Trust](https://img.shields.io/badge/Security-Zero--Trust_Enclave-red.svg)](#zero-trust-architecture)
 [![DPDP Ready](https://img.shields.io/badge/Compliance-DPDP_Ready-orange.svg)](docs/DPDP_COMPLIANCE.md)
@@ -63,9 +64,9 @@
 
 | Package | Language / Protocol | Status | Description |
 |---|---|---|---|
-| [`@aegiscore-ai/core`](core) | Node.js / TypeScript (v0.1.1) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
-| [`@aegiscore-ai/sdk`](sdk) | TypeScript (v0.1.1) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
-| [`aegiscore-ai`](sdk/python) | Python (>=3.8, v0.1.1) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
+| [`@aegiscore-ai/core`](https://www.npmjs.com/package/@aegiscore-ai/core) | Node.js / TypeScript (v0.1.1) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
+| [`@aegiscore-ai/sdk`](https://www.npmjs.com/package/@aegiscore-ai/sdk) | TypeScript (v0.1.1) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
+| [`aegiscore-ai`](https://pypi.org/project/aegiscore-ai/) | Python (>=3.8, v0.1.1) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
 | [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
 | [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |
 | [Audit Report](AUDIT_REPORT.md) | Security & Audit | Certified (v0.1.1) | External production readiness audit, DevSecOps report & empirical benchmarks |

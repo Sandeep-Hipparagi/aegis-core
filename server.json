@@ -3,7 +3,7 @@
   "name": "io.github.sandeep-hipparagi/aegiscore",
   "title": "AegisCore Governance & WORM Audit Gateway",
   "description": "Deterministic zero-trust policy enclave, fail-closed schema validator, DPDP PII sanitizer, and cryptographic WORM audit ledger for MCP tools.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Sandeep-Hipparagi/aegis-core.git"
@@ -12,12 +12,12 @@
     {
       "registry": "npm",
       "name": "@aegiscore-ai/core",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     {
       "registry": "pypi",
       "name": "aegiscore-ai",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ],
   "transport": {

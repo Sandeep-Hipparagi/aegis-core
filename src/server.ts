@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';

@@ -158,12 +158,30 @@ export class WormAuditLedger {
 
     this.entries.push(fullEntry);
 
-    // Persist to append-only disk log if enabled
+    // Persist to append-only disk log if enabled (atomic append with flag 'a')
     if (this.storagePath) {
-      appendFileSync(this.storagePath, JSON.stringify(fullEntry) + '\n', 'utf-8');
+      appendFileSync(this.storagePath, JSON.stringify(fullEntry) + '\n', { encoding: 'utf-8', flag: 'a' });
     }
 
     return fullEntry;
+  }
+
+  private writeQueue: Promise<void> = Promise.resolve();
+
+  /**
+   * Asynchronously append an entry via serialized promise queue
+   */
+  public async appendAsync(input: AppendEntryInput): Promise<AuditEntry> {
+    return new Promise((resolve, reject) => {
+      this.writeQueue = this.writeQueue.then(() => {
+        try {
+          const entry = this.append(input);
+          resolve(entry);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
   /**

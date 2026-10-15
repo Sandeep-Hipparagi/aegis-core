@@ -60,6 +60,49 @@ export interface ValidationOptions {
  * Validates payloads against strict schema contracts.
  */
 export class SchemaValidator {
+  public static readonly FORBIDDEN_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+  /**
+   * Recursively checks for forbidden prototype pollution keys at any depth.
+   */
+  public static checkPrototypePollution(obj: unknown, path = '$', issues: ValidationIssue[] = []): ValidationIssue[] {
+    if (obj === null || typeof obj !== 'object') {
+      return issues;
+    }
+
+    if (Array.isArray(obj)) {
+      for (let i = 0; i < obj.length; i++) {
+        SchemaValidator.checkPrototypePollution(obj[i], `${path}[${i}]`, issues);
+      }
+      return issues;
+    }
+
+    const target = obj as Record<string, unknown>;
+    const keys = new Set([...Object.keys(target), ...Object.getOwnPropertyNames(target)]);
+
+    for (const key of keys) {
+      const currentPath = path === '$' ? key : `${path}.${key}`;
+      if (SchemaValidator.FORBIDDEN_POLLUTION_KEYS.has(key)) {
+        issues.push({
+          path: currentPath,
+          code: 'REJECTED_SCHEMA',
+          message: `Forbidden prototype pollution key '${key}' detected under fail-closed policy.`,
+          expected: 'undefined (prototype keys forbidden)',
+          received: typeof target[key],
+          value: target[key]
+        });
+      } else {
+        try {
+          SchemaValidator.checkPrototypePollution(target[key], currentPath, issues);
+        } catch {
+          // Guard against getter bombs
+        }
+      }
+    }
+
+    return issues;
+  }
+
   /**
    * Validate a payload against a SchemaDefinition.
    * Throws ValidationError with code REJECTED_SCHEMA on any mismatch or unexpected property.
@@ -73,6 +116,9 @@ export class SchemaValidator {
     const isStrict = options.strict !== false && schema.strict !== false;
     const shouldStrip = options.stripUnrecognized ?? false;
     const issues: ValidationIssue[] = [];
+
+    // 0. Strict check for prototype pollution keys at any nesting depth
+    SchemaValidator.checkPrototypePollution(payload, '$', issues);
 
     if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
       throw new ValidationError(`Payload must be a non-null object for schema [${schema.name}]`, [

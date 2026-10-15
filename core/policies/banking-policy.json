@@ -1,0 +1,81 @@
+{
+  "version": "1.0.0",
+  "policyNamespace": "fintech.banking.guardrails",
+  "description": "Deterministic invariants and authorization rules for financial agent tool calls",
+  "defaultEffect": "DENY",
+  "rules": [
+    {
+      "id": "BNK-001-DENY-HIGH-VALUE-TRANSFER",
+      "name": "Prohibit Transfers Exceeding $10,000 Autonomous Cap",
+      "description": "Autonomous agents are strictly prohibited from transferring amounts exceeding $10,000 without multi-party governance approval.",
+      "targetTools": ["transfer_funds", "wire_money", "payout"],
+      "effect": "DENY",
+      "priority": 1000,
+      "conditions": [
+        {
+          "field": "parameters.amount",
+          "operator": "GREATER_THAN",
+          "value": 10000,
+          "description": "Transfer amount violates autonomous ceiling invariant ($10,000.00 USD)"
+        }
+      ]
+    },
+    {
+      "id": "BNK-002-DENY-SANCTIONED-RECIPIENTS",
+      "name": "Block Transfers to Sanctioned or Flagged Accounts",
+      "description": "Transfers directed to OFAC/sanctioned destinations or high-risk blacklisted accounts are strictly forbidden.",
+      "targetTools": ["transfer_funds", "wire_money"],
+      "effect": "DENY",
+      "priority": 950,
+      "conditions": [
+        {
+          "field": "parameters.destinationAccount",
+          "operator": "IN",
+          "value": ["SANCTIONED-ACCT-999", "BLACK-HAT-VAULT", "OFFSHORE-ANON-007"],
+          "description": "Destination account matches active global sanctions or fraud blacklist"
+        }
+      ]
+    },
+    {
+      "id": "BNK-003-ESCALATE-MID-VALUE-TRANSFER",
+      "name": "Escalate Transfers Over $1,000 for Human Sign-off",
+      "description": "Transfers between $1,000.01 and $10,000 require human operator confirmation.",
+      "targetTools": ["transfer_funds"],
+      "effect": "ESCALATE",
+      "priority": 500,
+      "conditions": [
+        {
+          "field": "parameters.amount",
+          "operator": "GREATER_THAN",
+          "value": 1000,
+          "description": "Transfer amount between $1,000 and $10,000 requires human-in-the-loop signoff"
+        }
+      ]
+    },
+    {
+      "id": "BNK-004-ALLOW-MICRO-TRANSFERS",
+      "name": "Permit Autonomous Micro-Transfers",
+      "description": "Permits transfers of $1,000 or below within authorized currency boundaries.",
+      "targetTools": ["transfer_funds"],
+      "effect": "ALLOW",
+      "priority": 200,
+      "conditions": [
+        {
+          "field": "parameters.amount",
+          "operator": "LESS_THAN_OR_EQUAL",
+          "value": 1000,
+          "description": "Transfer amount is within autonomous threshold ($1,000.00)"
+        }
+      ]
+    },
+    {
+      "id": "BNK-005-ALLOW-BALANCE-INQUIRY",
+      "name": "Permit Read-Only Account Inquiries",
+      "description": "Allows read-only balance lookups and statement inquiries for verified agent contexts.",
+      "targetTools": ["check_balance", "get_account_history", "list_transactions"],
+      "effect": "ALLOW",
+      "priority": 100,
+      "conditions": []
+    }
+  ]
+}

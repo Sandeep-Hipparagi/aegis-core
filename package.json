@@ -1,6 +1,6 @@
 {
   "name": "aegiscore-monorepo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deterministic Agent Governance Gateway - Zero-Trust Policy Enclave for AI Agents",
   "private": true,
   "type": "module",

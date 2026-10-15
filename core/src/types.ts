@@ -64,6 +64,8 @@ export interface PolicyRule {
   priority: number; // Higher number = higher precedence
 }
 
+export type InvariantRule = PolicyRule;
+
 export interface PolicyDocument {
   version: string;
   policyNamespace: string;

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AegisCorePolicyDocument",
+  "description": "Schema definition for AegisCore declarative governance rules and invariant specifications",
+  "type": "object",
+  "required": ["version", "policyNamespace", "rules"],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "policyNamespace": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "defaultEffect": {
+      "type": "string",
+      "enum": ["ALLOW", "DENY"],
+      "default": "DENY"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "targetTools", "effect", "conditions"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "targetTools": {
+            "oneOf": [
+              { "type": "string", "enum": ["*"] },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          },
+          "effect": {
+            "type": "string",
+            "enum": ["ALLOW", "DENY", "ESCALATE"]
+          },
+          "priority": {
+            "type": "integer",
+            "default": 100
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["field", "operator", "value"],
+              "properties": {
+                "field": { "type": "string" },
+                "operator": {
+                  "type": "string",
+                  "enum": [
+                    "EQUALS",
+                    "NOT_EQUALS",
+                    "GREATER_THAN",
+                    "LESS_THAN",
+                    "LESS_THAN_OR_EQUAL",
+                    "IN",
+                    "NOT_IN",
+                    "MATCHES_REGEX",
+                    "CONTAINS"
+                  ]
+                },
+                "value": {},
+                "description": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

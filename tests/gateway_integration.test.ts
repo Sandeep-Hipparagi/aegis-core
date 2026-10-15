@@ -92,7 +92,8 @@ describe('Gateway Integration - HTTP Server, Pipeline & MCP Protocol', () => {
       strict: true,
       properties: {
         amount: { type: 'number', required: true, min: 1 },
-        recipient: { type: 'string', required: true }
+        recipient: { type: 'string', required: true },
+        currency: { type: 'string', required: false }
       }
     });
 
@@ -362,4 +363,151 @@ describe('Gateway Integration - HTTP Server, Pipeline & MCP Protocol', () => {
     assert(exportData.challenge?.ticketId !== undefined);
   });
 
+  // -------------------------------------------------------------
+  // REGRESSION TEST SUITE (v0.1.1): SEC-01, SEC-02, SEC-03
+  // -------------------------------------------------------------
+  it('should enforce SEC-01: sanitize PII in metadata and quarantine forbidden control flags', async () => {
+    // 1. PII in metadata should be tokenized
+    const piiMetaRes = await fetch(`${baseUrl}/v1/gateway/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'transfer_funds',
+        parameters: { amount: 100, recipient: 'ACC-VALID', currency: 'USD' },
+        metadata: {
+          clientPhone: '+91 9876543210',
+          clientPan: 'ABCDE1234F',
+          orderRef: 'ORD-9912'
+        },
+        context: { sessionId: 'sess-meta-pii', agentId: 'test-agent', role: 'operator' }
+      })
+    });
+
+    assert.equal(piiMetaRes.status, 200);
+    const piiMetaData = await piiMetaRes.json() as { status: string; auditEntry?: { intentPayloadHash: string } };
+    assert.equal(piiMetaData.status, 'SUCCESS');
+
+    // 2. Control injection flag in metadata should be quarantined with SCHEMA_ERROR (400)
+    const injectMetaRes = await fetch(`${baseUrl}/v1/gateway/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'transfer_funds',
+        parameters: { amount: 100, recipient: 'ACC-VALID', currency: 'USD' },
+        metadata: {
+          force_execution: true
+        },
+        context: { sessionId: 'sess-meta-inject', agentId: 'test-agent', role: 'operator' }
+      })
+    });
+
+    assert.equal(injectMetaRes.status, 400);
+    const injectData = await injectMetaRes.json() as { status: string; reason: string };
+    assert.equal(injectData.status, 'SCHEMA_ERROR');
+    assert(injectData.reason.includes('Metadata quarantine violation'));
+
+    // 3. Prototype pollution attempt should be rejected with SCHEMA_ERROR (400)
+    const protoRes = await fetch(`${baseUrl}/v1/gateway/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'transfer_funds',
+        parameters: {
+          amount: 100,
+          recipient: 'ACC-VALID',
+          currency: 'USD',
+          constructor: { prototype: { admin: true } }
+        }
+      })
+    });
+
+    assert.equal(protoRes.status, 400);
+    const protoData = await protoRes.json() as { status: string; reason: string };
+    assert.equal(protoData.status, 'SCHEMA_ERROR');
+    assert(protoData.reason.includes('Prototype pollution') || protoData.reason.includes('constructor'));
+  });
+
+  it('should enforce SEC-02: maintain persistent sessionId in AegisClient and strictly enforce session rate limits', async () => {
+    const { AegisClient } = await import('../sdk/src/index.ts');
+
+    // Register a strict session rate limit rule: max 2 actions per session with priority 1100 to override defaults
+    server.loadPolicy({
+      version: '1.0.0',
+      namespace: 'session-rate-limit-test',
+      defaultEffect: 'ALLOW',
+      rules: [
+        {
+          id: 'TEST-SESSION-CAP-2',
+          name: 'Cap Session Actions to 2',
+          targetTools: ['transfer_funds'],
+          effect: 'DENY',
+          priority: 1100,
+          conditions: [
+            {
+              type: 'rate_limit',
+              maxActionsPerSession: 2,
+              windowMs: 60000,
+              message: 'Session rate limit exceeded (cap: 2)'
+            }
+          ]
+        }
+      ]
+    });
+
+    const client = new AegisClient({
+      gatewayUrl: baseUrl,
+      agentId: 'rate-limit-agent',
+      sessionId: 'sess-rate-limit-verified-1'
+    });
+
+    // Call 1: Approved
+    const res1 = await client.submitIntent('transfer_funds', { amount: 50, recipient: 'ACC-BOB', currency: 'USD' });
+    assert.equal(res1.decision.status, 'APPROVED');
+
+    // Call 2: Approved
+    const res2 = await client.submitIntent('transfer_funds', { amount: 60, recipient: 'ACC-BOB', currency: 'USD' });
+    assert.equal(res2.decision.status, 'APPROVED');
+
+    // Call 3: Blocked by session rate limit!
+    const res3 = await client.submitIntent('transfer_funds', { amount: 70, recipient: 'ACC-BOB', currency: 'USD' });
+    assert.equal(res3.decision.status, 'BLOCKED');
+    assert(res3.decision.reason.includes('rate limit exceeded') || res3.decision.violatedInvariants?.some(v => v.includes('rate limit')));
+
+    // Test client.dispatch() SDK parity method
+    const dispatchRes = await client.dispatch('transfer_funds', { amount: 80, recipient: 'ACC-BOB', currency: 'USD' });
+    assert.equal(dispatchRes.isBlocked, true);
+    assert.equal(dispatchRes.status, 'BLOCKED');
+
+    // Test client.health() SDK parity method
+    const health = await client.health();
+    assert.equal(health.status, 'healthy');
+
+    // Test client.verifyAuditIntegrity() SDK parity method
+    const integrity = await client.verifyAuditIntegrity();
+    assert.equal(integrity.isValid, true);
+  });
+
+  it('should enforce SEC-03: fail-closed with exit code 1 when verifying a non-existent ledger file via CLI', async () => {
+    const { execSync } = await import('node:child_process');
+    const { resolve } = await import('node:path');
+
+    const cliPath = resolve('./bin/aegis.ts');
+    let threwError = false;
+
+    try {
+      execSync(`node --experimental-strip-types "${cliPath}" audit verify --file non-existent-dummy-audit.log`, {
+        stdio: 'pipe'
+      });
+    } catch (err: unknown) {
+      threwError = true;
+      const status = (err as { status?: number }).status;
+      assert.equal(status, 1, 'Expected exit code 1 on missing audit ledger');
+      const stderr = (err as { stderr?: Buffer }).stderr?.toString() || '';
+      assert(stderr.includes('Ledger file not found'), `Expected error message, got: ${stderr}`);
+    }
+
+    assert.equal(threwError, true, 'CLI should fail closed on missing ledger file');
+  });
+
 });
+

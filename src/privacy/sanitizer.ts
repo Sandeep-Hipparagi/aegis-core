@@ -145,9 +145,10 @@ function unprocessValue(val: unknown, vault: Map<string, string>): unknown {
  */
 export function tokenize(
   payload: Record<string, unknown>,
-  sessionSalt: string
+  sessionSalt: string,
+  existingVault?: Map<string, string>
 ): TokenizeResult {
-  const vault = new Map<string, string>();
+  const vault = existingVault ?? new Map<string, string>();
   const sanitizedPayload = processValue(payload, sessionSalt, vault) as Record<string, unknown>;
   return { sanitizedPayload, vault };
 }

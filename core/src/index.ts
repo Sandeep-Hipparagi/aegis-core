@@ -1,4 +1,6 @@
+/// <reference types="node" />
 import { resolve, dirname } from 'node:path';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { AegisHttpServer } from '../../src/server.ts';
 
@@ -8,7 +10,7 @@ export * from './types.ts';
 // Canonical production classes & components (Zero conflicting star exports)
 export { GatewayPipeline } from '../../src/gateway/pipeline.ts';
 export { AegisHttpServer, AegisHttpServer as AegisGatewayServer } from '../../src/server.ts';
-export { PolicyEngine } from '../../src/policy/engine.ts';
+export { PolicyEngine, type InvariantRule, type PolicyContract, type ViolationTrace } from '../../src/policy/engine.ts';
 export { SchemaValidator, ValidationError } from '../../src/validator/schemaValidator.ts';
 export { WormAuditLedger, WormAuditLedger as WormLedger, GENESIS_HASH, hashPayload } from '../../src/audit/ledger.ts';
 export { SandboxRunner, SandboxRunner as ExecutionBoundary } from '../../src/executor/sandboxRunner.ts';
@@ -21,8 +23,20 @@ export { McpServerAdapter } from '../../src/mcp/server.ts';
  */
 export async function launchAegisGateway(port = 8080): Promise<AegisHttpServer> {
   const currentDir = dirname(fileURLToPath(import.meta.url));
-  const rootDir = resolve(currentDir, '../../');
-  const policiesDir = resolve(rootDir, 'policies');
+  const candidateDirs = [
+    resolve(currentDir, '../../policies'),
+    resolve(currentDir, '../policies'),
+    resolve(currentDir, '../../../policies'),
+    resolve(process.cwd(), 'policies')
+  ];
+
+  let policiesDir = resolve(currentDir, '../../policies');
+  for (const candidate of candidateDirs) {
+    if (existsSync(candidate)) {
+      policiesDir = candidate;
+      break;
+    }
+  }
 
   const server = new AegisHttpServer({ port, policiesDir });
 

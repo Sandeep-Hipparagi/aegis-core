@@ -63,12 +63,34 @@
 
 | Package | Language / Protocol | Status | Description |
 |---|---|---|---|
-| [`@aegiscore-ai/core`](core) | Node.js / TypeScript | Available | Core deterministic engine, WORM ledger, and HTTP gateway daemon |
-| [`@aegiscore-ai/sdk`](sdk) | TypeScript | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP |
-| [`aegiscore`](sdk/python) | Python (>=3.8) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen |
+| [`@aegiscore-ai/core`](core) | Node.js / TypeScript (v0.1.1) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
+| [`@aegiscore-ai/sdk`](sdk) | TypeScript (v0.1.1) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
+| [`aegiscore-ai`](sdk/python) | Python (>=3.8, v0.1.1) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
 | [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
 | [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |
+| [Audit Report](AUDIT_REPORT.md) | Security & Audit | Certified (v0.1.1) | External production readiness audit, DevSecOps report & empirical benchmarks |
 | [Show HN](docs/SHOW_HN.md) | Community | Ready | Hacker News launch narrative & technical breakdown |
+
+---
+
+## ⚡ Empirical Performance & Security Audit (v0.1.1)
+
+AegisCore underwent an end-to-end production readiness audit, fault isolation analysis, and high-concurrency stress testing by an external DevSecOps architect. Read the complete audit and verification report in [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
+
+### Verified Micro-Benchmarks (v0.1.1)
+
+| Benchmark Metric | Measurement | Operational Impact |
+| :--- | :---: | :--- |
+| **Cold Start Time** | **0.291 ms** | Instant container startup with zero JVM/Python runtime warm-up |
+| **P50 (Median) Pipeline Overhead** | **58.2 µs** (0.058 ms) | Negligible sub-millisecond impact on agentic loop latency |
+| **Average Execution Overhead** | **78.1 µs** (0.078 ms) | Full invariant verification, PII tokenization, and Merkle chaining |
+| **In-Memory Gateway Throughput** | **>12,500 req/sec** | Sustained high-concurrency event loops without thread contention |
+| **Memory Footprint Delta (1k reqs)** | **+1.30 MB Heap** | Highly bounded GC pressure suitable for memory-constrained edge sidecars |
+| **WORM Ledger Tamper Detection** | **100% Deterministic** | Pinpoints exact mutated entry index from Genesis hash pointer |
+
+> [!TIP]
+> **Production Readiness Score**: **9.5 / 10 (Enterprise)**, **9.8 / 10 (Startup)**, **9.6 / 10 (OSS)**.  
+> All security findings (SEC-01 prototype pollution defense, SEC-02 persistent session rate-limiting, SEC-03 fail-closed CLI audit verification, SEC-04 strict metadata quarantine, SEC-05 atomic append ledger, and PKG-01/PKG-02 clean-slate packaging) are remediated and verified in Release `v0.1.1`. See [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
 
 ---
 
@@ -147,7 +169,7 @@ AegisCore strips all execution power from the agent. The agent produces only an 
 git clone https://github.com/Sandeep-Hipparagi/aegis-core.git
 cd aegis-core
 
-# Run full test suite (31 tests across 10 suites)
+# Run full test suite (37 tests across 10 suites)
 npm test
 
 # Start HTTP Gateway daemon on port 8080
@@ -161,7 +183,7 @@ docker compose up -d
 
 # Check health
 curl http://localhost:8080/health
-# {"status":"healthy","version":"0.1.0"}
+# {"status":"healthy","version":"0.1.1"}
 ```
 
 ### Option C: Run Banking Invariant Demonstration

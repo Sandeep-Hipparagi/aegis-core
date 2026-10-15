@@ -25,6 +25,10 @@ class DispatchResult:
         return self.status == "SUCCESS"
 
     @property
+    def is_approved(self) -> bool:
+        return self.status in ("SUCCESS", "APPROVED")
+
+    @property
     def is_blocked(self) -> bool:
         return self.status == "BLOCKED"
 

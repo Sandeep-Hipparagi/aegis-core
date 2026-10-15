@@ -88,8 +88,8 @@ Options:
         const filePath = getArg('--file') || defaultLedgerPath;
 
         if (!existsSync(filePath)) {
-          console.log(`[AegisCore Audit] No ledger file found at '${filePath}'. New ledger has 0 entries (valid).`);
-          process.exit(0);
+          console.error(`[AegisCore Audit] ❌ Error: Ledger file not found at '${filePath}'.`);
+          process.exit(1);
         }
 
         const ledger = new WormAuditLedger({ storagePath: filePath });

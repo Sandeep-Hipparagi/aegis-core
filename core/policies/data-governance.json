@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "policyNamespace": "infrastructure.data.governance",
+  "description": "Deterministic safety rules preventing destructive mutations and unauthorized database operations",
+  "defaultEffect": "DENY",
+  "rules": [
+    {
+      "id": "DATA-001-DENY-DESTRUCTIVE-SQL",
+      "name": "Block Destructive DDL and Truncation Queries",
+      "description": "Strictly prohibits DROP TABLE, TRUNCATE, or schema deletions by autonomous agents.",
+      "targetTools": ["execute_sql_query", "run_database_command"],
+      "effect": "DENY",
+      "priority": 1000,
+      "conditions": [
+        {
+          "field": "parameters.query",
+          "operator": "MATCHES_REGEX",
+          "value": "(?i)\\b(DROP\\s+TABLE|TRUNCATE|DROP\\s+DATABASE|ALTER\\s+TABLE.*DROP)\\b",
+          "description": "SQL query matches prohibited destructive DDL statement invariant"
+        }
+      ]
+    },
+    {
+      "id": "DATA-002-DENY-ACCOUNT-DELETION",
+      "name": "Block Autonomous Account/Customer Deletion",
+      "description": "Agents cannot invoke customer termination or record purge endpoints autonomously.",
+      "targetTools": ["delete_customer_account", "purge_user_data"],
+      "effect": "DENY",
+      "priority": 900,
+      "conditions": [
+        {
+          "field": "agent.role",
+          "operator": "NOT_EQUALS",
+          "value": "super-admin-human",
+          "description": "Only human super-administrators can authorize customer account purging"
+        }
+      ]
+    },
+    {
+      "id": "DATA-003-ALLOW-READONLY-SELECT",
+      "name": "Allow Read-Only SELECT Queries",
+      "description": "Permits safe read-only SELECT queries on approved analytics views.",
+      "targetTools": ["execute_sql_query"],
+      "effect": "ALLOW",
+      "priority": 100,
+      "conditions": [
+        {
+          "field": "parameters.query",
+          "operator": "MATCHES_REGEX",
+          "value": "(?i)^\\s*SELECT\\b",
+          "description": "Query begins with SELECT read invariant"
+        }
+      ]
+    }
+  ]
+}

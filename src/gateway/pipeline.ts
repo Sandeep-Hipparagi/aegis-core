@@ -97,28 +97,55 @@ export class GatewayPipeline {
     const agentId = context.agentId || (rawIntent.agentId as string) || 'anonymous-agent';
     const role = context.role || (rawIntent.role as string) || 'agent';
     const rawParams = (rawIntent.parameters as Record<string, unknown>) || {};
+    const rawMetadata = (rawIntent.metadata as Record<string, unknown>) || {};
     const sessionSalt = context.sessionSalt || sessionId;
 
     // -------------------------------------------------------------
-    // Step 1: DPDP PII Interception & Tokenization
+    // Step 1: DPDP PII Interception & Tokenization (Parameters & Metadata)
     // -------------------------------------------------------------
-    const { sanitizedPayload, vault } = tokenize(rawParams, sessionSalt);
+    const { sanitizedPayload: sanitizedParams, vault } = tokenize(rawParams, sessionSalt);
+    const { sanitizedPayload: sanitizedMetadata } = tokenize(rawMetadata, sessionSalt, vault);
 
     // -------------------------------------------------------------
-    // Step 2: Strict Schema Validation (Fail-Closed)
+    // Step 2: Strict Schema Validation & Quarantine (Fail-Closed)
     // -------------------------------------------------------------
-    let effectiveParams: Record<string, unknown> = sanitizedPayload;
+    // Check prototype pollution on both parameters and metadata
+    const pollutionIssues = [
+      ...SchemaValidator.checkPrototypePollution(sanitizedParams, 'parameters'),
+      ...SchemaValidator.checkPrototypePollution(sanitizedMetadata, 'metadata')
+    ];
+
+    if (pollutionIssues.length > 0) {
+      const audit = this.ledger.append({
+        sessionId,
+        agentId,
+        intentPayload: { tool, parameters: sanitizedParams, metadata: sanitizedMetadata, intentId },
+        policyVerdict: 'BLOCKED',
+        violationTrace: pollutionIssues
+      });
+
+      return {
+        status: 'SCHEMA_ERROR',
+        intentId,
+        sessionId,
+        tool,
+        reason: `[REJECTED_SCHEMA] Prototype pollution attempt detected: ${pollutionIssues.map(i => i.message).join('; ')}`,
+        auditEntry: audit
+      };
+    }
+
+    let effectiveParams: Record<string, unknown> = sanitizedParams;
     const toolSchema = this.toolSchemas.get(tool);
 
     if (toolSchema) {
       try {
-        effectiveParams = SchemaValidator.validate(toolSchema, sanitizedPayload);
+        effectiveParams = SchemaValidator.validate(toolSchema, sanitizedParams);
       } catch (err: unknown) {
         if (err instanceof ValidationError) {
           const audit = this.ledger.append({
             sessionId,
             agentId,
-            intentPayload: { tool, parameters: rawParams, intentId },
+            intentPayload: { tool, parameters: sanitizedParams, metadata: sanitizedMetadata, intentId },
             policyVerdict: 'BLOCKED',
             violationTrace: err.issues
           });
@@ -136,6 +163,108 @@ export class GatewayPipeline {
       }
     }
 
+    // Metadata validation and quarantine
+    let effectiveMetadata: Record<string, unknown> = sanitizedMetadata;
+    const metadataSchema = this.toolSchemas.get(`${tool}:metadata`);
+
+    if (metadataSchema) {
+      try {
+        effectiveMetadata = SchemaValidator.validate(metadataSchema, sanitizedMetadata);
+      } catch (err: unknown) {
+        if (err instanceof ValidationError) {
+          const audit = this.ledger.append({
+            sessionId,
+            agentId,
+            intentPayload: { tool, parameters: effectiveParams, metadata: sanitizedMetadata, intentId },
+            policyVerdict: 'BLOCKED',
+            violationTrace: err.issues
+          });
+
+          return {
+            status: 'SCHEMA_ERROR',
+            intentId,
+            sessionId,
+            tool,
+            reason: err.message,
+            auditEntry: audit
+          };
+        }
+        throw err;
+      }
+    } else {
+      // Default strict metadata quarantine
+      const metaKeys = Object.keys(sanitizedMetadata);
+      if (metaKeys.length > 16) {
+        const audit = this.ledger.append({
+          sessionId,
+          agentId,
+          intentPayload: { tool, parameters: effectiveParams, metadata: sanitizedMetadata, intentId },
+          policyVerdict: 'BLOCKED',
+          violationTrace: [{ path: 'metadata', message: 'Metadata exceeds maximum limit of 16 keys.' }]
+        });
+
+        return {
+          status: 'SCHEMA_ERROR',
+          intentId,
+          sessionId,
+          tool,
+          reason: '[REJECTED_SCHEMA] Metadata quarantine violation: exceeds maximum limit of 16 keys.',
+          auditEntry: audit
+        };
+      }
+
+      const FORBIDDEN_CONTROL_FLAGS = new Set([
+        'force_execution',
+        'override_policy',
+        'bypass_governance',
+        'admin_override',
+        'elevate_privilege',
+        'skip_checks',
+        'disable_guardrails'
+      ]);
+
+      for (const key of metaKeys) {
+        if (FORBIDDEN_CONTROL_FLAGS.has(key.toLowerCase())) {
+          const audit = this.ledger.append({
+            sessionId,
+            agentId,
+            intentPayload: { tool, parameters: effectiveParams, metadata: sanitizedMetadata, intentId },
+            policyVerdict: 'BLOCKED',
+            violationTrace: [{ path: `metadata.${key}`, message: `Unauthorized control or injection flag '${key}' in metadata.` }]
+          });
+
+          return {
+            status: 'SCHEMA_ERROR',
+            intentId,
+            sessionId,
+            tool,
+            reason: `[REJECTED_SCHEMA] Metadata quarantine violation: unauthorized control flag '${key}' rejected.`,
+            auditEntry: audit
+          };
+        }
+
+        const val = sanitizedMetadata[key];
+        if (val !== null && typeof val === 'object') {
+          const audit = this.ledger.append({
+            sessionId,
+            agentId,
+            intentPayload: { tool, parameters: effectiveParams, metadata: sanitizedMetadata, intentId },
+            policyVerdict: 'BLOCKED',
+            violationTrace: [{ path: `metadata.${key}`, message: `Nested object in metadata field '${key}' is prohibited under strict quarantine.` }]
+          });
+
+          return {
+            status: 'SCHEMA_ERROR',
+            intentId,
+            sessionId,
+            tool,
+            reason: `[REJECTED_SCHEMA] Metadata quarantine violation: nested object in '${key}' is prohibited. Use primitive values or register a ${tool}:metadata schema.`,
+            auditEntry: audit
+          };
+        }
+      }
+    }
+
     // Build canonical IntentPayload
     const canonicalIntent: IntentPayload = {
       intentId,
@@ -148,7 +277,7 @@ export class GatewayPipeline {
       },
       tool,
       parameters: effectiveParams,
-      metadata: (rawIntent.metadata as Record<string, unknown>) || {}
+      metadata: effectiveMetadata
     };
 
     // -------------------------------------------------------------

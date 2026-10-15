@@ -56,3 +56,55 @@ export interface ExecutionResult {
   };
   auditDigest: string;
 }
+
+export interface EvaluateIntentRequest {
+  tool: string;
+  parameters?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  agent?: Partial<AgentContext>;
+}
+
+export interface IntentEvaluationResponse {
+  intent: IntentPayload;
+  decision: PolicyDecision;
+  execution?: ExecutionResult;
+}
+
+export type EvaluateIntentResponse = IntentEvaluationResponse;
+
+export interface DispatchOptions {
+  sessionId?: string;
+  agentId?: string;
+  role?: string;
+  metadata?: Record<string, unknown>;
+  raiseOnBlocked?: boolean;
+}
+
+export interface DispatchResult {
+  status: 'SUCCESS' | 'BLOCKED' | 'REQUIRES_HITL' | 'SCHEMA_ERROR' | 'EXECUTION_FAILED' | string;
+  intentId?: string;
+  sessionId?: string;
+  tool?: string;
+  reason?: string;
+  output?: unknown;
+  violations?: Array<Record<string, unknown>>;
+  challenge?: Record<string, unknown>;
+  auditEntry?: Record<string, unknown>;
+  raw: Record<string, unknown>;
+  isSuccess: boolean;
+  isBlocked: boolean;
+  requiresHitl: boolean;
+  ticketId?: string;
+}
+
+export interface AuditIntegrityResult {
+  isValid: boolean;
+  brokenAtIndex?: number;
+  reason?: string;
+}
+
+export interface HealthCheckResponse {
+  status: string;
+  version: string;
+}
+

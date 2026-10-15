@@ -21,7 +21,10 @@ export { McpServerAdapter } from '../../src/mcp/server.ts';
 /**
  * Bootstrap function to launch the gateway with sample policies and mock handlers
  */
-export async function launchAegisGateway(port = 8080): Promise<AegisHttpServer> {
+export async function launchAegisGateway(
+  port = 8080,
+  ledgerPath = resolve(process.cwd(), 'aegis-audit.log')
+): Promise<AegisHttpServer> {
   const currentDir = dirname(fileURLToPath(import.meta.url));
   const candidateDirs = [
     resolve(currentDir, '../../policies'),
@@ -38,7 +41,7 @@ export async function launchAegisGateway(port = 8080): Promise<AegisHttpServer> 
     }
   }
 
-  const server = new AegisHttpServer({ port, policiesDir });
+  const server = new AegisHttpServer({ port, policiesDir, ledgerPath });
 
   // Register mock safe tool handlers
   server.registerToolHandler('check_balance', (params) => {

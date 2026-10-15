@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { GatewayPipeline, type RequestContext, type PipelineResult } from './gateway/pipeline.ts';
+import { WormAuditLedger } from './audit/ledger.ts';
 import type { ToolHandler, ExecutionResult } from './executor/sandboxRunner.ts';
 import type { SchemaDefinition } from './validator/schemaValidator.ts';
 import type { PolicyContract } from './policy/engine.ts';
@@ -14,6 +15,7 @@ export interface HttpServerOptions {
   host?: string;
   pipeline?: GatewayPipeline;
   policiesDir?: string;
+  ledgerPath?: string;
 }
 
 export class AegisHttpServer {
@@ -25,7 +27,8 @@ export class AegisHttpServer {
   constructor(options: HttpServerOptions = {}) {
     this.port = options.port ?? 8080;
     this.host = options.host ?? '0.0.0.0';
-    this.pipeline = options.pipeline ?? new GatewayPipeline();
+    const ledger = options.ledgerPath ? new WormAuditLedger({ storagePath: options.ledgerPath }) : undefined;
+    this.pipeline = options.pipeline ?? new GatewayPipeline(ledger ? { ledger } : {});
 
     if (options.policiesDir) {
       this.loadPoliciesFromDir(options.policiesDir);

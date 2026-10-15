@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline';
 import { GatewayPipeline, type PipelineResult } from '../gateway/pipeline.ts';
+import { shredVault } from '../privacy/sanitizer.ts';
 
 export interface McpToolDefinition {
   name: string;
@@ -36,9 +37,60 @@ export interface JsonRpcResponse {
 export class McpServerAdapter {
   private pipeline: GatewayPipeline;
   private tools: Map<string, McpToolDefinition> = new Map();
+  private sessionVaults: Map<string, Map<string, string>> = new Map();
 
   constructor(pipeline?: GatewayPipeline) {
     this.pipeline = pipeline ?? new GatewayPipeline();
+    this.registerDefaultTools();
+  }
+
+  private registerDefaultTools(): void {
+    this.registerTool({
+      name: 'evaluate_intent',
+      description: 'Evaluate a proposed tool invocation against AegisCore deterministic zero-trust policy invariants before execution',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          tool: {
+            type: 'string',
+            description: 'Name of the target tool to evaluate'
+          },
+          parameters: {
+            type: 'object',
+            description: 'Parameters for the target tool'
+          },
+          metadata: {
+            type: 'object',
+            description: 'Optional execution metadata'
+          }
+        },
+        required: ['tool', 'parameters']
+      }
+    });
+
+    this.registerTool({
+      name: 'verify_audit_integrity',
+      description: 'Verify cryptographic SHA-256 Merkle chain integrity of the WORM audit ledger',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    });
+
+    this.registerTool({
+      name: 'shred_vault',
+      description: 'Cryptographically shred an ephemeral PII session vault under DPDP Act 2023 Right to Erasure',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'Session ID whose cryptographic PII vault will be permanently shredded'
+          }
+        },
+        required: ['sessionId']
+      }
+    });
   }
 
   public getPipeline(): GatewayPipeline {
@@ -67,7 +119,7 @@ export class McpServerAdapter {
             },
             serverInfo: {
               name: 'aegiscore-mcp-gateway',
-              version: '0.1.0'
+              version: '0.1.1'
             }
           }
         };
@@ -87,16 +139,62 @@ export class McpServerAdapter {
       case 'tools/call': {
         const toolName = (params?.name as string) || '';
         const args = (params?.arguments as Record<string, unknown>) || {};
+        const meta = (params?._meta as Record<string, unknown>) || {};
+        const sessionId = (meta.sessionId as string) || (args.sessionId as string) || 'mcp-session';
+
+        if (toolName === 'verify_audit_integrity') {
+          const ledgerResult = this.pipeline.getLedger().verifyChainIntegrity();
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              isError: !ledgerResult.isValid,
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(ledgerResult)
+                }
+              ]
+            }
+          };
+        }
+
+        if (toolName === 'shred_vault') {
+          const sid = (args.sessionId as string) || sessionId;
+          const vault = this.sessionVaults.get(sid);
+          if (vault) {
+            shredVault(vault);
+            this.sessionVaults.delete(sid);
+          }
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              isError: false,
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({ sessionId: sid, shredded: true })
+                }
+              ]
+            }
+          };
+        }
+
+        const targetTool = toolName === 'evaluate_intent' ? ((args.tool as string) || '') : toolName;
+        const targetParams = toolName === 'evaluate_intent' ? ((args.parameters as Record<string, unknown>) || {}) : args;
+        const targetMetadata = toolName === 'evaluate_intent' ? ((args.metadata as Record<string, unknown>) || undefined) : undefined;
 
         const pipelineResult: PipelineResult = await this.pipeline.processIntent(
           {
-            tool: toolName,
-            parameters: args
+            tool: targetTool,
+            parameters: targetParams,
+            metadata: targetMetadata
           },
           {
             agentId: 'mcp-client',
             role: 'mcp-caller',
-            sessionId: (params?._meta as Record<string, unknown>)?.sessionId as string || 'mcp-session'
+            sessionId
           }
         );
 

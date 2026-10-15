@@ -13,6 +13,7 @@ services:
       - PORT=8080
       - HOST=0.0.0.0
       - NODE_ENV=production
+    command: ["start", "--port", "8080"]
     volumes:
       - aegis-audit-data:/app/data
       - ./policies:/app/policies:ro

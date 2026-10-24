@@ -64,9 +64,9 @@
 
 | Package | Language / Protocol | Status | Description |
 |---|---|---|---|
-| [`@aegiscore-ai/core`](https://www.npmjs.com/package/@aegiscore-ai/core) | Node.js / TypeScript (v0.1.2) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
-| [`@aegiscore-ai/sdk`](https://www.npmjs.com/package/@aegiscore-ai/sdk) | TypeScript (v0.1.2) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
-| [`aegiscore-ai`](https://pypi.org/project/aegiscore-ai/) | Python (>=3.8, v0.1.2) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
+| [`@aegiscore-ai/core`](https://www.npmjs.com/package/@aegiscore-ai/core) | Node.js / TypeScript (v0.1.3) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
+| [`@aegiscore-ai/sdk`](https://www.npmjs.com/package/@aegiscore-ai/sdk) | TypeScript (v0.1.3) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
+| [`aegiscore-ai`](https://pypi.org/project/aegiscore-ai/) | Python (>=3.8, v0.1.3) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
 | [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
 | [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |
 | [Audit Report](AUDIT_REPORT.md) | Security & Audit | Certified (v0.1.2) | External production readiness audit, DevSecOps report & empirical benchmarks |

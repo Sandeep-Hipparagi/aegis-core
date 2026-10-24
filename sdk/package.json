@@ -1,6 +1,7 @@
 {
   "name": "@aegiscore-ai/sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "mcpName": "io.github.Sandeep-Hipparagi/aegiscore",
   "description": "Lightweight client SDK for AegisCore deterministic agent governance (MCP, OpenAI, LangGraph)",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

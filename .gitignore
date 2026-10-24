@@ -23,6 +23,10 @@ data/audit/
 *.sqlite
 *.db
 
+# Tools and local binaries
+mcp-publisher*
+*.tar.gz
+
 # Environment and secrets
 .env
 .env.*

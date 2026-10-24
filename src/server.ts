@@ -119,7 +119,7 @@ export class AegisHttpServer {
 
     // Health check
     if (url === '/health' && method === 'GET') {
-      this.sendJson(res, 200, { status: 'healthy', version: '0.1.2' });
+      this.sendJson(res, 200, { status: 'healthy', version: '0.1.3' });
       return;
     }
 

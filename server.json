@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.sandeep-hipparagi/aegiscore",
+  "name": "io.github.Sandeep-Hipparagi/aegiscore",
   "title": "AegisCore",
   "description": "Deterministic zero-trust policy enclave and cryptographic WORM audit ledger for MCP tools.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "websiteUrl": "https://github.com/Sandeep-Hipparagi/aegis-core",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "identifier": "@aegiscore-ai/core",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "transport": {
         "type": "stdio"
       },
@@ -29,7 +29,7 @@
     {
       "registryType": "pypi",
       "identifier": "aegiscore-ai",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "transport": {
         "type": "stdio"
       }

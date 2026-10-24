@@ -133,7 +133,7 @@ describe('Gateway Integration - HTTP Server, Pipeline & MCP Protocol', () => {
     assert.equal(res.status, 200);
     const data = await res.json() as { status: string; version: string };
     assert.equal(data.status, 'healthy');
-    assert.equal(data.version, '0.1.2');
+    assert.equal(data.version, '0.1.3');
   });
 
   it('should successfully dispatch a valid tool action and return SUCCESS with output', async () => {

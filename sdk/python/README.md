@@ -2,7 +2,7 @@
 
 Official, zero-dependency Python client for **AegisCore** — the Deterministic Zero-Trust Policy & Cryptographic WORM Audit Gateway for AI Agents.
 
-<!-- mcp-name: io.github.sandeep-hipparagi/aegiscore -->
+<!-- mcp-name: io.github.Sandeep-Hipparagi/aegiscore -->
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://pypi.org/project/aegiscore-ai/)

@@ -37,10 +37,10 @@ const PII_PATTERNS: Array<{
     category: 'email',
     regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
   },
-  // 2. Indian PAN Card (e.g., ABCDE1234F)
+  // 2. Indian PAN Card (case-insensitive: e.g. ABCDE1234F or abcde1234f)
   {
     category: 'pan',
-    regex: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g
+    regex: /\b[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}\b/gi
   },
   // 3. Indian Aadhaar Number (12 digits, often spaced or hyphenated: e.g. 5432 1234 5678)
   {

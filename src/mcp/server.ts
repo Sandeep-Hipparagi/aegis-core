@@ -119,7 +119,7 @@ export class McpServerAdapter {
             },
             serverInfo: {
               name: 'aegiscore-mcp-gateway',
-              version: '0.1.1'
+              version: '0.1.2'
             }
           }
         };

@@ -14,6 +14,7 @@ export type Operator =
   | 'EQUALS' 
   | 'NOT_EQUALS' 
   | 'GREATER_THAN' 
+  | 'GREATER_THAN_OR_EQUAL'
   | 'LESS_THAN' 
   | 'LESS_THAN_OR_EQUAL' 
   | 'IN' 
@@ -236,19 +237,44 @@ export class PolicyEngine {
         return actual !== expected;
 
       case 'GREATER_THAN':
-        return typeof actual === 'number' && typeof expected === 'number' && actual > expected;
+        return typeof actual === 'number' && Number.isFinite(actual) && typeof expected === 'number' && actual > expected;
+
+      case 'GREATER_THAN_OR_EQUAL':
+        return typeof actual === 'number' && Number.isFinite(actual) && typeof expected === 'number' && actual >= expected;
 
       case 'LESS_THAN':
-        return typeof actual === 'number' && typeof expected === 'number' && actual < expected;
+        return typeof actual === 'number' && Number.isFinite(actual) && typeof expected === 'number' && actual < expected;
 
       case 'LESS_THAN_OR_EQUAL':
-        return typeof actual === 'number' && typeof expected === 'number' && actual <= expected;
+        return typeof actual === 'number' && Number.isFinite(actual) && typeof expected === 'number' && actual <= expected;
 
-      case 'IN':
-        return Array.isArray(expected) && expected.includes(actual);
+      case 'IN': {
+        if (!Array.isArray(expected)) return false;
+        if (typeof actual === 'string') {
+          const normActual = actual.trim().toLowerCase();
+          return expected.some(item => {
+            if (typeof item === 'string') {
+              return item.trim().toLowerCase() === normActual;
+            }
+            return item === actual;
+          });
+        }
+        return expected.includes(actual);
+      }
 
-      case 'NOT_IN':
-        return Array.isArray(expected) && !expected.includes(actual);
+      case 'NOT_IN': {
+        if (!Array.isArray(expected)) return false;
+        if (typeof actual === 'string') {
+          const normActual = actual.trim().toLowerCase();
+          return !expected.some(item => {
+            if (typeof item === 'string') {
+              return item.trim().toLowerCase() === normActual;
+            }
+            return item === actual;
+          });
+        }
+        return !expected.includes(actual);
+      }
 
       case 'MATCHES_REGEX':
         if (typeof actual !== 'string' || typeof expected !== 'string') return false;

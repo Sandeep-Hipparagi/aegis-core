@@ -1,6 +1,7 @@
 {
   "name": "@aegiscore-ai/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "mcpName": "io.github.sandeep-hipparagi/aegiscore",
   "description": "Deterministic zero-trust policy engine, cryptographic WORM ledger, and isolated sandbox for AI agents",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -5,6 +5,22 @@
   "defaultEffect": "DENY",
   "rules": [
     {
+      "id": "FIN-000-DENY-NON-POSITIVE-AMOUNT",
+      "name": "Prohibit Non-Positive Transfer Amounts",
+      "description": "Transfers with negative, zero, or non-finite amounts are strictly forbidden.",
+      "targetTools": ["transfer_funds", "wire_money", "create_payout"],
+      "effect": "DENY",
+      "priority": 1100,
+      "conditions": [
+        {
+          "field": "parameters.amount",
+          "operator": "LESS_THAN_OR_EQUAL",
+          "value": 0,
+          "description": "Transfer amount must be strictly greater than zero"
+        }
+      ]
+    },
+    {
       "id": "FIN-001-BLOCK-UNAUTHORIZED-CURRENCY",
       "name": "Enforce Permitted Operating Currencies",
       "description": "Restricts transactions to authorized sovereign fiat currencies",
@@ -65,6 +81,12 @@
           "operator": "LESS_THAN_OR_EQUAL",
           "value": 25000,
           "description": "Transfer is within single-agent authorized limit"
+        },
+        {
+          "field": "parameters.amount",
+          "operator": "GREATER_THAN",
+          "value": 0,
+          "description": "Transfer amount must be positive"
         }
       ]
     },

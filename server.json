@@ -1,37 +1,38 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2024-11-05/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.sandeep-hipparagi/aegiscore",
-  "title": "AegisCore Governance & WORM Audit Gateway",
-  "description": "Deterministic zero-trust policy enclave, fail-closed schema validator, DPDP PII sanitizer, and cryptographic WORM audit ledger for MCP tools.",
-  "version": "0.1.1",
+  "title": "AegisCore",
+  "description": "Deterministic zero-trust policy enclave and cryptographic WORM audit ledger for MCP tools.",
+  "version": "0.1.2",
+  "websiteUrl": "https://github.com/Sandeep-Hipparagi/aegis-core",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Sandeep-Hipparagi/aegis-core.git"
+    "url": "https://github.com/Sandeep-Hipparagi/aegis-core.git",
+    "source": "github"
   },
   "packages": [
     {
-      "registry": "npm",
-      "name": "@aegiscore-ai/core",
-      "version": "0.1.1"
+      "registryType": "npm",
+      "identifier": "@aegiscore-ai/core",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx",
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
     },
     {
-      "registry": "pypi",
-      "name": "aegiscore-ai",
-      "version": "0.1.1"
+      "registryType": "pypi",
+      "identifier": "aegiscore-ai",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      }
     }
-  ],
-  "transport": {
-    "type": "stdio"
-  },
-  "command": "npx",
-  "args": ["@aegiscore-ai/core", "mcp"],
-  "keywords": [
-    "mcp",
-    "security",
-    "governance",
-    "zero-trust",
-    "audit-ledger",
-    "policy-engine",
-    "dpdp"
   ]
 }

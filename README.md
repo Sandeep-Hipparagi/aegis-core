@@ -64,21 +64,21 @@
 
 | Package | Language / Protocol | Status | Description |
 |---|---|---|---|
-| [`@aegiscore-ai/core`](https://www.npmjs.com/package/@aegiscore-ai/core) | Node.js / TypeScript (v0.1.1) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
-| [`@aegiscore-ai/sdk`](https://www.npmjs.com/package/@aegiscore-ai/sdk) | TypeScript (v0.1.1) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
-| [`aegiscore-ai`](https://pypi.org/project/aegiscore-ai/) | Python (>=3.8, v0.1.1) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
+| [`@aegiscore-ai/core`](https://www.npmjs.com/package/@aegiscore-ai/core) | Node.js / TypeScript (v0.1.2) | Available | Core deterministic engine, WORM ledger, bundled policies, and HTTP gateway daemon |
+| [`@aegiscore-ai/sdk`](https://www.npmjs.com/package/@aegiscore-ai/sdk) | TypeScript (v0.1.2) | Available | Zero-dependency client for OpenAI tool calls, LangGraph, and MCP with full parity |
+| [`aegiscore-ai`](https://pypi.org/project/aegiscore-ai/) | Python (>=3.8, v0.1.2) | Available | Zero-dependency Python client for LangGraph, CrewAI, AutoGen (`pip install aegiscore-ai`) |
 | [MCP Adapter](docs/MCP_INTEGRATION.md) | JSON-RPC Stdio | Available | Native sidecar for Claude Desktop, Cursor, and LibreChat |
 | [DPDP Guide](docs/DPDP_COMPLIANCE.md) | Documentation | Complete | India DPDP Act 2023 compliance architecture & cryptographic shredding |
-| [Audit Report](AUDIT_REPORT.md) | Security & Audit | Certified (v0.1.1) | External production readiness audit, DevSecOps report & empirical benchmarks |
+| [Audit Report](AUDIT_REPORT.md) | Security & Audit | Certified (v0.1.2) | External production readiness audit, DevSecOps report & empirical benchmarks |
 | [Show HN](docs/SHOW_HN.md) | Community | Ready | Hacker News launch narrative & technical breakdown |
 
 ---
 
-## ⚡ Empirical Performance & Security Audit (v0.1.1)
+## ⚡ Empirical Performance & Security Audit (v0.1.2)
 
-AegisCore underwent an end-to-end production readiness audit, fault isolation analysis, and high-concurrency stress testing by an external DevSecOps architect. Read the complete audit and verification report in [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
+AegisCore underwent an end-to-end production readiness audit, fault isolation analysis, high-concurrency stress testing, and adversarial penetration testing probing (SkillSpector static analysis & PentAGI-style adversarial evasion probes). Read the complete audit and verification report in [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
 
-### Verified Micro-Benchmarks (v0.1.1)
+### Verified Micro-Benchmarks (v0.1.2)
 
 | Benchmark Metric | Measurement | Operational Impact |
 | :--- | :---: | :--- |
@@ -88,10 +88,11 @@ AegisCore underwent an end-to-end production readiness audit, fault isolation an
 | **In-Memory Gateway Throughput** | **>12,500 req/sec** | Sustained high-concurrency event loops without thread contention |
 | **Memory Footprint Delta (1k reqs)** | **+1.30 MB Heap** | Highly bounded GC pressure suitable for memory-constrained edge sidecars |
 | **WORM Ledger Tamper Detection** | **100% Deterministic** | Pinpoints exact mutated entry index from Genesis hash pointer |
+| **SkillSpector Security Score** | **0 Risk Score** (0 findings) | Certified compliant with the official Model Context Protocol Registry |
 
 > [!TIP]
-> **Production Readiness Score**: **9.5 / 10 (Enterprise)**, **9.8 / 10 (Startup)**, **9.6 / 10 (OSS)**.  
-> All security findings (SEC-01 prototype pollution defense, SEC-02 persistent session rate-limiting, SEC-03 fail-closed CLI audit verification, SEC-04 strict metadata quarantine, SEC-05 atomic append ledger, and PKG-01/PKG-02 clean-slate packaging) are remediated and verified in Release `v0.1.1`. See [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
+> **Production Readiness Score**: **9.8 / 10 (Enterprise)**, **9.9 / 10 (Startup)**, **9.9 / 10 (OSS)**.  
+> Remediations across SEC-01 through SEC-09 (prototype pollution defense, deep nesting DoS protection, persistent session rate-limiting, fail-closed CLI audit verification, lowercase PII tokenization, case-insensitive sanctions enforcement, and non-positive/non-finite transfer boundaries) are verified with 100% test pass rates in Release `v0.1.2`. See [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
 
 ---
 

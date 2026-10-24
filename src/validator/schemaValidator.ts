@@ -62,17 +62,49 @@ export interface ValidationOptions {
 export class SchemaValidator {
   public static readonly FORBIDDEN_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+  public static readonly MAX_NESTING_DEPTH = 32;
+
   /**
-   * Recursively checks for forbidden prototype pollution keys at any depth.
+   * Recursively checks for forbidden prototype pollution keys at any depth,
+   * enforcing maximum nesting depth and circular reference defenses.
    */
-  public static checkPrototypePollution(obj: unknown, path = '$', issues: ValidationIssue[] = []): ValidationIssue[] {
+  public static checkPrototypePollution(
+    obj: unknown,
+    path = '$',
+    issues: ValidationIssue[] = [],
+    depth = 0,
+    seen = new WeakSet<object>()
+  ): ValidationIssue[] {
     if (obj === null || typeof obj !== 'object') {
       return issues;
     }
 
+    if (depth > SchemaValidator.MAX_NESTING_DEPTH) {
+      issues.push({
+        path,
+        code: 'REJECTED_SCHEMA',
+        message: `Object nesting depth exceeds safety threshold (${SchemaValidator.MAX_NESTING_DEPTH}). Potential denial of service or evasion attempt.`,
+        expected: `<= ${SchemaValidator.MAX_NESTING_DEPTH} nesting depth`,
+        received: `${depth}`
+      });
+      return issues;
+    }
+
+    if (seen.has(obj as object)) {
+      issues.push({
+        path,
+        code: 'REJECTED_SCHEMA',
+        message: `Circular reference detected at '${path}'.`,
+        expected: 'acyclic object',
+        received: 'circular reference'
+      });
+      return issues;
+    }
+    seen.add(obj as object);
+
     if (Array.isArray(obj)) {
       for (let i = 0; i < obj.length; i++) {
-        SchemaValidator.checkPrototypePollution(obj[i], `${path}[${i}]`, issues);
+        SchemaValidator.checkPrototypePollution(obj[i], `${path}[${i}]`, issues, depth + 1, seen);
       }
       return issues;
     }
@@ -82,7 +114,8 @@ export class SchemaValidator {
 
     for (const key of keys) {
       const currentPath = path === '$' ? key : `${path}.${key}`;
-      if (SchemaValidator.FORBIDDEN_POLLUTION_KEYS.has(key)) {
+      const normKey = key.trim().toLowerCase();
+      if (SchemaValidator.FORBIDDEN_POLLUTION_KEYS.has(normKey) || SchemaValidator.FORBIDDEN_POLLUTION_KEYS.has(key)) {
         issues.push({
           path: currentPath,
           code: 'REJECTED_SCHEMA',
@@ -93,9 +126,15 @@ export class SchemaValidator {
         });
       } else {
         try {
-          SchemaValidator.checkPrototypePollution(target[key], currentPath, issues);
-        } catch {
-          // Guard against getter bombs
+          SchemaValidator.checkPrototypePollution(target[key], currentPath, issues, depth + 1, seen);
+        } catch (err: unknown) {
+          issues.push({
+            path: currentPath,
+            code: 'REJECTED_SCHEMA',
+            message: `Runtime property inspection exception at '${currentPath}': ${err instanceof Error ? err.message : String(err)}`,
+            expected: 'safe inspectable property',
+            received: 'property access error'
+          });
         }
       }
     }
@@ -259,13 +298,13 @@ export class SchemaValidator {
       }
 
       case 'number': {
-        if (typeof val !== 'number' || Number.isNaN(val)) {
+        if (typeof val !== 'number' || !Number.isFinite(val)) {
           issues.push({
             path,
             code: 'REJECTED_SCHEMA',
-            message: `Field '${path}' expected number, received ${typeof val}.`,
+            message: `Field '${path}' expected finite number, received ${typeof val === 'number' ? String(val) : typeof val}.`,
             expected: 'number',
-            received: typeof val,
+            received: typeof val === 'number' ? String(val) : typeof val,
             value: val
           });
           return;

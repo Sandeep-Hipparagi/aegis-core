@@ -20,9 +20,11 @@
     "demo:scenario-1": "node --experimental-strip-types scripts/demo-scenario-1.js",
     "demo:scenario-2": "node --experimental-strip-types scripts/demo-scenario-2.js",
     "demo:scenario-3": "node --experimental-strip-types scripts/demo-scenario-3.js",
-    "test": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts tests/security_penetration.test.ts",
+    "test": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts tests/security_penetration.test.ts tests/policy_packs_edge_cases.test.ts tests/failure_recovery.test.ts",
+    "test:coverage": "node --experimental-strip-types --test --experimental-test-coverage tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts tests/security_penetration.test.ts tests/policy_packs_edge_cases.test.ts tests/failure_recovery.test.ts",
     "test:python": "python -c \"import sys; sys.path.insert(0, 'sdk/python'); import unittest; unittest.main(module=None, argv=['', 'discover', '-s', 'sdk/python/tests'])\"",
-    "test:all": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts tests/security_penetration.test.ts && node --experimental-strip-types examples/banking-agent.ts && npm run test:python"
+    "test:python:coverage": "python -c \"import os, sys, subprocess; env = dict(os.environ, PYTHONPATH='sdk/python'); subprocess.run([sys.executable, '-m', 'coverage', 'run', '--source=sdk/python/aegiscore', '-m', 'unittest', 'discover', '-s', 'sdk/python/tests'], env=env, check=True); subprocess.run([sys.executable, '-m', 'coverage', 'report', '-m', '--fail-under=85'], check=True)\"",
+    "test:all": "node --experimental-strip-types --test tests/policy.test.ts tests/audit_and_executor.test.ts tests/privacy_and_hitl.test.ts tests/gateway_integration.test.ts tests/security_penetration.test.ts tests/policy_packs_edge_cases.test.ts tests/failure_recovery.test.ts && node --experimental-strip-types examples/banking-agent.ts && npm run test:python"
   },
   "keywords": [
     "ai-agent",

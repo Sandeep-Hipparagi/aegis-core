@@ -40,16 +40,19 @@ jobs:
       - name: Compile Distribution Bundles
         run: npm run build
 
-      - name: Run Full Test Suite
-        run: npm test
+      - name: Run Full Test Suite with Coverage
+        run: npm run test:coverage
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Run Python SDK Tests
-        run: npm run test:python
+      - name: Install Python Coverage
+        run: pip install coverage
+
+      - name: Run Python SDK Tests with Coverage Gate
+        run: npm run test:python:coverage
 
       - name: Run Live Banking Invariant Demonstration
         run: npm run demo:banking

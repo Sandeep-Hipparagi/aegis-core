@@ -12,6 +12,7 @@ from aegiscore import (
     AegisGateway,
     AegisClient,
     DispatchResult,
+    AegisGatewayError,
     AegisPolicyBlockedError,
     AegisSchemaError,
 )
@@ -107,6 +108,58 @@ class TestAegisPythonSDK(unittest.TestCase):
             self.gateway.dispatch("query_database", {"targetTable": "users.credentials"}, raise_on_blocked=True)
 
         self.assertIn("Target table blacklisted", str(ctx.exception))
+
+    @patch("urllib.request.urlopen")
+    def test_dispatch_schema_error_with_raise(self, mock_urlopen):
+        err_body = json.dumps({
+            "status": "SCHEMA_ERROR",
+            "reason": "Missing required field 'accountId'",
+            "violations": [{"code": "REJECTED_SCHEMA", "path": "accountId"}]
+        }).encode("utf-8")
+        mock_fp = io.BytesIO(err_body)
+        http_err = urllib.error.HTTPError("http://127.0.0.1:8080/v1/gateway/dispatch", 400, "Bad Request", {}, mock_fp)
+        mock_urlopen.side_effect = http_err
+
+        with self.assertRaises(AegisSchemaError) as ctx:
+            self.gateway.dispatch("check_balance", {}, raise_on_blocked=True)
+
+        self.assertIn("Missing required field 'accountId'", str(ctx.exception))
+
+    @patch("urllib.request.urlopen")
+    def test_dispatch_schema_error_without_raise(self, mock_urlopen):
+        err_body = json.dumps({
+            "status": "SCHEMA_ERROR",
+            "reason": "Invalid parameter type",
+            "violations": [{"code": "REJECTED_SCHEMA"}]
+        }).encode("utf-8")
+        mock_fp = io.BytesIO(err_body)
+        http_err = urllib.error.HTTPError("http://127.0.0.1:8080/v1/gateway/dispatch", 400, "Bad Request", {}, mock_fp)
+        mock_urlopen.side_effect = http_err
+
+        res = self.gateway.dispatch("check_balance", {}, raise_on_blocked=False)
+        self.assertEqual(res.status, "SCHEMA_ERROR")
+        self.assertFalse(res.is_success)
+
+    @patch("urllib.request.urlopen")
+    def test_gateway_connection_failure_recovery(self, mock_urlopen):
+        mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
+
+        with self.assertRaises(AegisGatewayError) as ctx:
+            self.gateway.dispatch("check_balance", {"accountId": "ACC-01"})
+
+        self.assertIn("Connection to AegisCore Gateway failed", str(ctx.exception))
+
+    @patch("urllib.request.urlopen")
+    def test_gateway_http_500_recovery(self, mock_urlopen):
+        err_body = b"Internal Server Error"
+        mock_fp = io.BytesIO(err_body)
+        http_err = urllib.error.HTTPError("http://127.0.0.1:8080/v1/gateway/dispatch", 500, "Internal Server Error", {}, mock_fp)
+        mock_urlopen.side_effect = http_err
+
+        with self.assertRaises(AegisGatewayError) as ctx:
+            self.gateway.dispatch("check_balance", {"accountId": "ACC-01"})
+
+        self.assertEqual(ctx.exception.status_code, 500)
 
     @patch("urllib.request.urlopen")
     def test_evaluate_intent(self, mock_urlopen):

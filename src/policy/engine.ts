@@ -279,7 +279,13 @@ export class PolicyEngine {
       case 'MATCHES_REGEX':
         if (typeof actual !== 'string' || typeof expected !== 'string') return false;
         try {
-          const regex = new RegExp(expected);
+          let pattern = expected;
+          let flags = '';
+          if (pattern.startsWith('(?i)')) {
+            flags = 'i';
+            pattern = pattern.slice(4);
+          }
+          const regex = new RegExp(pattern, flags);
           return regex.test(actual);
         } catch {
           return false;

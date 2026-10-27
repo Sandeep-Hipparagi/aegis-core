@@ -3,12 +3,14 @@ export * from './types.ts';
 export * from './openai.ts';
 export * from './mcp.ts';
 export * from './langgraph.ts';
-import type { 
-  IntentEvaluationResponse, 
-  DispatchOptions, 
-  DispatchResult, 
-  AuditIntegrityResult, 
-  HealthCheckResponse 
+import { 
+  AegisPolicyBlockedError,
+  AegisSchemaError,
+  type IntentEvaluationResponse, 
+  type DispatchOptions, 
+  type DispatchResult, 
+  type AuditIntegrityResult, 
+  type HealthCheckResponse 
 } from './types.ts';
 
 export interface AegisClientOptions {
@@ -129,8 +131,21 @@ export class AegisClient {
       ticketId: (raw.challenge as Record<string, unknown> | undefined)?.ticketId as string | undefined
     };
 
+    if (status === 'SCHEMA_ERROR') {
+      const issues = (raw.violations as Array<Record<string, unknown>>) || [];
+      throw new AegisSchemaError(
+        `Tool invocation '${tool}' failed schema validation: ${raw.reason ?? 'Schema error'}`,
+        issues,
+        raw
+      );
+    }
+
     if (options.raiseOnBlocked && status === 'BLOCKED') {
-      throw new Error(`Tool invocation '${tool}' was BLOCKED: ${raw.reason}`);
+      throw new AegisPolicyBlockedError(
+        `Tool invocation '${tool}' was BLOCKED: ${raw.reason}`,
+        result.violations,
+        raw
+      );
     }
 
     return result;

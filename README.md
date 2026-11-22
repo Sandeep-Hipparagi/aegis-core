@@ -320,10 +320,10 @@ In Cursor Settings ➔ Features ➔ MCP Servers ➔ Add New MCP Server:
 
 AegisCore ships with enterprise policy packs in `/policies`:
 
-- [`policies/dpdp-india.json`](file:///c:/Users/sudh3/Downloads/AegisCore/policies/dpdp-india.json): Enforces India's Digital Personal Data Protection Act. Restricts bulk customer data exports, blocks unmasked identity table access, and requires Data Protection Officer authorization for customer profile purges.
-- [`policies/fintech-guardrails.json`](file:///c:/Users/sudh3/Downloads/AegisCore/policies/fintech-guardrails.json): Enforces transaction ceilings, whitelists operating currencies (`USD`, `EUR`, `INR`, `GBP`), and requires dual-custody supervisor approval for transactions over $25,000.
-- [`policies/banking-policy.json`](file:///c:/Users/sudh3/Downloads/AegisCore/policies/banking-policy.json): Limits autonomous transfers to $10,000, blocks sanctioned/blacklisted destinations, and escalates mid-value transfers.
-- [`policies/data-governance.json`](file:///c:/Users/sudh3/Downloads/AegisCore/policies/data-governance.json): Prohibits destructive DDL statements (`DROP TABLE`, `TRUNCATE`) and unauthorized account deletions.
+- [`policies/dpdp-india.json`](policies/dpdp-india.json): Enforces India's Digital Personal Data Protection Act. Restricts bulk customer data exports, blocks unmasked identity table access, and requires Data Protection Officer authorization for customer profile purges.
+- [`policies/fintech-guardrails.json`](policies/fintech-guardrails.json): Enforces transaction ceilings, whitelists operating currencies (`USD`, `EUR`, `INR`, `GBP`), and requires dual-custody supervisor approval for transactions over $25,000.
+- [`policies/banking-policy.json`](policies/banking-policy.json): Limits autonomous transfers to $10,000, blocks sanctioned/blacklisted destinations, and escalates mid-value transfers.
+- [`policies/data-governance.json`](policies/data-governance.json): Prohibits destructive DDL statements (`DROP TABLE`, `TRUNCATE`) and unauthorized account deletions.
 
 ---
 

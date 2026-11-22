@@ -368,6 +368,12 @@ curl http://localhost:8080/v1/audit/integrity
 
 ---
 
+## Ecosystem
+
+aegis-core's zero-trust policy gate and schema validator are exercised by the portfolio's unified evaluation harness - see [agent-benchmark-suite](https://github.com/Sandeep-Hipparagi/agent-benchmark-suite).
+
+---
+
 ## 🤝 Contributing
 
 We welcome community contributions! Please review [`CONTRIBUTING.md`](CONTRIBUTING.md) for local environment setup, zero-trust invariants, and pull request guidelines.

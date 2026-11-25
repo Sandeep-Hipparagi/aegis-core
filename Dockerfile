@@ -28,6 +28,13 @@ ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
 
+# OCI labels for GitHub Packages repository linking
+LABEL org.opencontainers.image.source="https://github.com/Sandeep-Hipparagi/aegis-core" \
+      org.opencontainers.image.description="Zero-trust policy enclave for AI agents: fail-closed schema validation, WORM audit ledger, HITL gates, PII sanitizer" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.title="AegisCore" \
+      org.opencontainers.image.version="0.1.3"
+
 # Create unprivileged application user
 RUN addgroup -S aegis && adduser -S aegis -G aegis && \
     mkdir -p /app/data && chown -R aegis:aegis /app

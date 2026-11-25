@@ -1,0 +1,51 @@
+name: Publish to GitHub Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish packages to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@sandeep-hipparagi'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Publish @sandeep-hipparagi/aegis-core
+        run: |
+          cd core
+          # Temporarily rewrite name for GitHub Packages
+          npm pkg set name="@sandeep-hipparagi/aegis-core"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @sandeep-hipparagi/aegis-sdk
+        run: |
+          cd sdk
+          # Temporarily rewrite name for GitHub Packages
+          npm pkg set name="@sandeep-hipparagi/aegis-sdk"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

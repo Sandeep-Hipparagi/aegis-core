@@ -17,7 +17,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@types/node": ">=20.0.0"
+    "@types/node": ">=26.6.6"
   },
   "scripts": {
     "start": "node --experimental-strip-types src/index.ts"

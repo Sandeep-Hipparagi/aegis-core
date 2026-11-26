@@ -12,6 +12,12 @@
 
 > **AegisCore** is an open-source reverse-proxy, deterministic invariant policy enclave, and cryptographic WORM audit ledger for autonomous AI agents. It intercepts model tool calls, validates them against strict schemas and deterministic invariants, and only executes approved actions within an isolated boundary.
 
+## Product Walkthrough & Architecture Demo
+
+https://github.com/Sandeep-Hipparagi/aegis-core/releases/download/media-v1/brag.mp4
+
+[![aegis-core demo](assets/media/preview.webp)](https://github.com/Sandeep-Hipparagi/aegis-core/releases/tag/media-v1)
+
 ---
 
 ### 📺 Terminal Showcases & Scenario Deep-Dives
